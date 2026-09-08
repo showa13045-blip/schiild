@@ -1,0 +1,17 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { initialState, logicalDate, timeWindow, addAtelier, recordSchiil, addToAtelier } from '../packages/shared/domain.mjs';
+const before = new Date('2026-09-08T23:59:00Z');
+const after = new Date('2026-09-09T00:01:00Z');
+const atelier = { atelierId: 'atelier-a', name: '日々', capacity: 12, createdAt: before.toISOString() };
+const start = () => addAtelier(initialState(), atelier);
+const photo = { schiilId: 'schiil-a', schiildDate: '2026-09-08', uri: 'file:///photo.jpg', atelierIds: ['atelier-a'], createdAt: before.toISOString() };
+test('utc boundary: 23:59 and 00:01 have different logical dates', () => { assert.equal(logicalDate(before), '2026-09-08'); assert.equal(logicalDate(after), '2026-09-09'); });
+test('JST display window starts and ends at 09:00', () => { const window = timeWindow('2026-09-08'); assert.match(window, /9\/8 09:00/); assert.match(window, /9\/9 09:00/); });
+test('one Schiil per UTC day even with different IDs', () => { const state = recordSchiil(start(), photo, before); assert.throws(() => recordSchiil(state, { ...photo, schiilId: 'schiil-b' }, before), /ALREADY_RECORDED/); assert.equal(state.schiils.length, 1); });
+test('next day can record another Schiil', () => { const state = recordSchiil(start(), photo, before); assert.equal(recordSchiil(state, { ...photo, schiilId: 'schiil-b', schiildDate: '2026-09-09' }, after).schiils.length, 2); });
+test('a draft from yesterday cannot silently become todays record', () => { assert.throws(() => recordSchiil(start(), photo, after), /DATE_CHANGED/); });
+test('recording requires an existing atelier', () => { assert.throws(() => recordSchiil(start(), { ...photo, atelierIds: [] }, before), /INVALID_ATELIER/); assert.throws(() => recordSchiil(start(), { ...photo, atelierIds: ['unknown'] }, before), /INVALID_ATELIER/); });
+test('additional atelier uses the existing Schiil, remains idempotent', () => { let state = addAtelier(start(), { ...atelier, atelierId: 'atelier-b' }); state = recordSchiil(state, photo, before); state = addToAtelier(state, photo.schiilId, 'atelier-b', before); state = addToAtelier(state, photo.schiilId, 'atelier-b', before); assert.equal(state.schiils.length, 1); assert.deepEqual(state.schiils[0].atelierIds, ['atelier-a', 'atelier-b']); });
+test('past records cannot be added to another atelier', () => { assert.throws(() => addToAtelier(recordSchiil(start(), photo, before), photo.schiilId, atelier.atelierId, after), /DATE_CHANGED/); });
+test('invalid capacity and empty name are rejected', () => { for (const capacity of [1, 2001, 2.5, NaN]) assert.throws(() => addAtelier(initialState(), { ...atelier, capacity }), /INVALID_ATELIER/); assert.throws(() => addAtelier(initialState(), { ...atelier, name: ' ' }), /INVALID_ATELIER/); });

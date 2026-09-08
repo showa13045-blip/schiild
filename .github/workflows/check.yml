@@ -1,0 +1,33 @@
+name: M0 foundation checks
+on: [push, pull_request]
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: cargo test --workspace
+      - run: pnpm --filter api build
+      - run: pnpm build
+        env:
+          EXPO_NO_TELEMETRY: '1'
+      - run: pnpm --filter mobile build:web
+        env:
+          EXPO_NO_TELEMETRY: '1'
+  requirements:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node scripts/check-requirements.mjs
