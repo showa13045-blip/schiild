@@ -77,6 +77,6 @@ docs/                仕様差分と検証結果
 
 `docs/M0-REPORT.md` に実装と受け入れ条件の状況を記録しています。
 現在の `pnpm lint` はESLintによるソース全体の文言検査です。`pnpm typecheck` はAPI・共有型・ID型の負例も対象です。
-正式資料を受領し、Rustの基盤検証も成功しています。GitHub CIとpush確認が残っています。詳細はdocs/M0-REPORT.mdとdocs/SOURCE-REVIEW.mdを参照してください。
+正式資料を受領し、Rustの基盤検証も成功しています。GitHubへのpushとCI全ジョブの成功を確認しました。ドラフトPR #1はレビュー待ちです。詳細はdocs/M0-REPORT.mdとdocs/SOURCE-REVIEW.mdを参照してください。
 
 このPCの作業フォルダ内に導入したRustの検証は `pnpm test:rust` で再実行できます。他の環境ではPATH上のcargoを使用します。
