@@ -1,0 +1,3 @@
+[build]
+  command = "pnpm --filter demo build:web"
+  publish = "apps/demo/dist"

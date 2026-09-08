@@ -1,0 +1,7 @@
+dist/
+test-results/
+.expo/
+.expo-home/
+.netlify/
+.vercel/
+.env*
