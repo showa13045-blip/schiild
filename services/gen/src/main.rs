@@ -1,6 +1,6 @@
 use clap::Parser;
 use gen::{bsp, render::*};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -48,6 +48,15 @@ struct Args {
     schiild_index: u64,
     #[arg(long)]
     workers: Option<usize>,
+    /// Prepare one uploaded JPEG; writes bucket-means.json under --out.
+    #[arg(long, conflicts_with_all = ["prepare_bucket", "prepared_bucket", "layout_only"])]
+    prepare_image: Option<PathBuf>,
+    /// Prepare all JPEGs in the manifest without rendering (bucket only).
+    #[arg(long, conflicts_with_all = ["prepared_bucket", "layout_only", "frozen_seed", "previous"])]
+    prepare_bucket: bool,
+    /// Trusted server-side preprocessed means; JPEGs are not reopened.
+    #[arg(long, conflicts_with = "layout_only")]
+    prepared_bucket: Option<PathBuf>,
 }
 #[derive(Deserialize)]
 struct Entry {
@@ -57,6 +66,42 @@ struct Entry {
     #[serde(default)]
     image_sha256: Option<String>,
 }
+
+const MEAN_SCHEMA: &str = "schiild-bucket-mean-v1";
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct BucketMeans {
+    schema: String,
+    images: BTreeMap<String, gen::color::Lab>,
+}
+impl BucketMeans {
+    fn validate(&self) -> Result<(), String> {
+        if self.schema != MEAN_SCHEMA {
+            return Err("unsupported bucket mean schema".into());
+        }
+        for (hash, mean) in &self.images {
+            if hex(&seed_hex(hash)?) != *hash
+                || mean.iter().any(|v| !v.is_finite())
+                || !(0.0..=1.000001).contains(&mean[0])
+                || !(-0.5..=0.5).contains(&mean[1])
+                || !(-0.5..=0.5).contains(&mean[2])
+            {
+                return Err("invalid bucket mean record".into());
+            }
+        }
+        Ok(())
+    }
+    fn save(&self, out: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+        self.validate()?;
+        if out.exists() {
+            return Err("output directory already exists".into());
+        }
+        fs::create_dir_all(out)?;
+        fs::write(out.join("bucket-means.json"), serde_json::to_vec(self)?)?;
+        Ok(())
+    }
+}
+
 fn date_valid(date: &str) -> bool {
     let parts = date.split('-').collect::<Vec<_>>();
     if parts.len() != 3 || parts[0].len() != 4 || parts[1].len() != 2 || parts[2].len() != 2 {
@@ -87,6 +132,35 @@ fn date_valid(date: &str) -> bool {
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     let start = Instant::now();
+    if let Some(path) = &args.prepare_image {
+        let bytes = fs::read(path)?;
+        if image::guess_format(&bytes)? != image::ImageFormat::Jpeg {
+            return Err("input must be JPEG".into());
+        }
+        let mean = std::thread::scope(|scope| {
+            scope
+                .spawn(|| -> Result<_, String> {
+                    bucket_mean(
+                        &image::load_from_memory(&bytes)
+                            .map_err(|e| e.to_string())?
+                            .to_rgb8(),
+                    )
+                })
+                .join()
+                .map_err(|_| "image worker panicked")?
+        })?;
+        let hash = hex(&Sha256::digest(&bytes));
+        let means = BucketMeans {
+            schema: MEAN_SCHEMA.into(),
+            images: BTreeMap::from([(hash, mean)]),
+        };
+        means.save(&args.out.ok_or("--out required")?)?;
+        println!(
+            "{}",
+            serde_json::json!({"phase":"preprocess","total_ms":start.elapsed().as_secs_f64()*1000.0,"decode_count":1})
+        );
+        return Ok(());
+    }
     if args.layout_only {
         let seed = seed_hex(
             args.frozen_seed
@@ -138,6 +212,18 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         schiild_index: args.schiild_index,
     };
     config.validate()?;
+    if (args.prepare_bucket || args.prepared_bucket.is_some()) && config.tier != "bucket" {
+        return Err("preprocessed means require bucket tier".into());
+    }
+    let cached: Option<BucketMeans> = args
+        .prepared_bucket
+        .as_ref()
+        .map(|path| -> Result<_, Box<dyn std::error::Error>> {
+            let means: BucketMeans = serde_json::from_slice(&fs::read(path)?)?;
+            means.validate()?;
+            Ok(means)
+        })
+        .transpose()?;
     let entries: Vec<Entry> = serde_json::from_slice(&fs::read(root.join("manifest.json"))?)?;
     let mut members = Vec::new();
     let mut paths = Vec::new();
@@ -147,7 +233,16 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         if entry.slot_index >= config.capacity || !seen.insert(entry.slot_index) {
             return Err("invalid manifest slot".into());
         }
-        let (path, hash) = if let Some(cached) = file_cache.get(&entry.image) {
+        let (path, hash) = if let Some(means) = &cached {
+            let hash = entry
+                .image_sha256
+                .clone()
+                .ok_or("prepared input requires image_sha256")?;
+            if !means.images.contains_key(&hash) {
+                return Err("missing prepared image hash".into());
+            }
+            (PathBuf::new(), hash)
+        } else if let Some(cached) = file_cache.get(&entry.image) {
             cached.clone()
         } else {
             let path = fs::canonicalize(root.join(&entry.image))?;
@@ -210,66 +305,81 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let batch_size = groups.len().div_ceil(workers).max(1);
     // Each image is decoded once, then all required shapes are prepared on the same worker.
     // Pixel accumulation inside prepare() stays strictly sequential.
-    let results = std::thread::scope(|scope| {
-        let handles = groups
-            .chunks(batch_size)
-            .map(|chunk| {
-                let config = &config;
-                let rects = &rects;
-                scope.spawn(move || -> Result<(Vec<Prepared>, usize), String> {
-                    let mut prepared_inputs = Vec::new();
-                    let mut hits = 0usize;
-                    for (path, members) in chunk {
-                        let bytes = fs::read(path).map_err(|e| e.to_string())?;
-                        if hex(&Sha256::digest(&bytes)) != members[0].image_sha256 {
-                            return Err("input changed during preparation".into());
-                        }
-                        if image::guess_format(&bytes).map_err(|e| e.to_string())?
-                            != image::ImageFormat::Jpeg
-                        {
-                            return Err("input must be JPEG".into());
-                        }
-                        let image = image::load_from_memory(&bytes)
-                            .map_err(|e| e.to_string())?
-                            .to_rgb8();
-                        if image.dimensions() != (1080, 1080) {
-                            return Err("input must be 1080 x 1080".into());
-                        }
-                        let mut samples_by_shape: BTreeMap<
-                            Option<(u32, u32)>,
-                            Vec<gen::color::Lab>,
-                        > = BTreeMap::new();
-                        for member in members {
-                            let rect = rects.get(member.slot_index).copied();
-                            let key = rect.map(|r| (r.w, r.h));
-                            let samples = if let Some(samples) = samples_by_shape.get(&key) {
-                                hits += 1;
-                                samples.clone()
-                            } else {
-                                let samples =
-                                    prepare(&image, member.clone(), rect, config)?.samples;
-                                samples_by_shape.insert(key, samples.clone());
-                                samples
-                            };
-                            prepared_inputs.push(Prepared {
-                                member: member.clone(),
-                                samples,
-                            });
-                        }
-                    }
-                    Ok((prepared_inputs, hits))
+    let results = if let Some(means) = &cached {
+        vec![(
+            groups
+                .iter()
+                .flat_map(|(_, members)| {
+                    members.iter().map(|member| Prepared {
+                        member: member.clone(),
+                        samples: vec![means.images[&member.image_sha256]],
+                    })
                 })
-            })
-            .collect::<Vec<_>>();
-        handles
-            .into_iter()
-            .map(|handle| {
-                handle
-                    .join()
-                    .map_err(|_| "image worker panicked".to_string())?
-            })
-            .collect::<Result<Vec<_>, String>>()
-    })?;
+                .collect(),
+            0,
+        )]
+    } else {
+        std::thread::scope(|scope| {
+            let handles = groups
+                .chunks(batch_size)
+                .map(|chunk| {
+                    let config = &config;
+                    let rects = &rects;
+                    scope.spawn(move || -> Result<(Vec<Prepared>, usize), String> {
+                        let mut prepared_inputs = Vec::new();
+                        let mut hits = 0usize;
+                        for (path, members) in chunk {
+                            let bytes = fs::read(path).map_err(|e| e.to_string())?;
+                            if hex(&Sha256::digest(&bytes)) != members[0].image_sha256 {
+                                return Err("input changed during preparation".into());
+                            }
+                            if image::guess_format(&bytes).map_err(|e| e.to_string())?
+                                != image::ImageFormat::Jpeg
+                            {
+                                return Err("input must be JPEG".into());
+                            }
+                            let image = image::load_from_memory(&bytes)
+                                .map_err(|e| e.to_string())?
+                                .to_rgb8();
+                            if image.dimensions() != (1080, 1080) {
+                                return Err("input must be 1080 x 1080".into());
+                            }
+                            let mut samples_by_shape: BTreeMap<
+                                Option<(u32, u32)>,
+                                Vec<gen::color::Lab>,
+                            > = BTreeMap::new();
+                            for member in members {
+                                let rect = rects.get(member.slot_index).copied();
+                                let key = rect.map(|r| (r.w, r.h));
+                                let samples = if let Some(samples) = samples_by_shape.get(&key) {
+                                    hits += 1;
+                                    samples.clone()
+                                } else {
+                                    let samples =
+                                        prepare(&image, member.clone(), rect, config)?.samples;
+                                    samples_by_shape.insert(key, samples.clone());
+                                    samples
+                                };
+                                prepared_inputs.push(Prepared {
+                                    member: member.clone(),
+                                    samples,
+                                });
+                            }
+                        }
+                        Ok((prepared_inputs, hits))
+                    })
+                })
+                .collect::<Vec<_>>();
+            handles
+                .into_iter()
+                .map(|handle| {
+                    handle
+                        .join()
+                        .map_err(|_| "image worker panicked".to_string())?
+                })
+                .collect::<Result<Vec<_>, String>>()
+        })?
+    };
     let mut inputs = Vec::new();
     let mut sample_hits = 0usize;
     for (batch, hits) in results {
@@ -277,6 +387,21 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         sample_hits += hits;
     }
     let prepared_ms = start.elapsed().as_secs_f64() * 1000.0;
+    if args.prepare_bucket {
+        let means = BucketMeans {
+            schema: MEAN_SCHEMA.into(),
+            images: inputs
+                .iter()
+                .map(|input| (input.member.image_sha256.clone(), input.samples[0]))
+                .collect(),
+        };
+        means.save(&args.out.ok_or("--out required")?)?;
+        println!(
+            "{}",
+            serde_json::json!({"phase":"preprocess","total_ms":start.elapsed().as_secs_f64()*1000.0,"decode_count":decode_count})
+        );
+        return Ok(());
+    }
     let render_start = Instant::now();
     let artifact = generate(&config, seed, &inputs, previous.as_ref())?;
     let render_ms = render_start.elapsed().as_secs_f64() * 1000.0;
@@ -299,7 +424,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     fs::write(out.join("used_seed.txt"), format!("{}\n", hex(&seed)))?;
     println!(
         "{}",
-        serde_json::json!({"workers":workers,"index_ms":indexed_ms,"sample_ms":prepared_ms-indexed_ms,"unique_paths":file_cache.len(),"decode_count":decode_count,"sample_cache_hits":sample_hits,"prepare_ms":prepared_ms,"render_encode_ms":render_ms,"total_ms":start.elapsed().as_secs_f64()*1000.0,"output":out})
+        serde_json::json!({"workers":workers,"index_ms":indexed_ms,"sample_ms":prepared_ms-indexed_ms,"unique_paths":file_cache.len(),"decode_count":if cached.is_some() {0} else {decode_count},"input_mode":if cached.is_some() {"prepared_bucket"} else {"jpeg"},"sample_cache_hits":sample_hits,"prepare_ms":prepared_ms,"render_encode_ms":render_ms,"total_ms":start.elapsed().as_secs_f64()*1000.0,"output":out})
     );
     Ok(())
 }

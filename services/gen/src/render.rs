@@ -143,27 +143,12 @@ pub fn prepare(
         return Err("input must be 1080 x 1080".into());
     }
     if config.tier == "bucket" {
-        let mut sum = [0.0; 3];
-        // Bounded direct-mapped cache. Compare the complete RGB key on every hit;
-        // collisions only evict entries and never approximate a color.
-        let mut colors = vec![(u32::MAX, [0.0; 3]); 4096];
-        for pixel in image.pixels() {
-            let key =
-                (u32::from(pixel[0]) << 16) | (u32::from(pixel[1]) << 8) | u32::from(pixel[2]);
-            let index = (key.wrapping_mul(0x9e3779b1) >> 20) as usize;
-            if colors[index].0 != key {
-                colors[index] = (key, lab_u8(pixel.0));
-            }
-            let value = colors[index].1;
-            for k in 0..3 {
-                sum[k] += value[k];
-            }
-        }
         return Ok(Prepared {
             member,
-            samples: vec![sum.map(|v| v / (1080.0 * 1080.0))],
+            samples: vec![bucket_mean(image)?],
         });
     }
+
     let rect = rect.ok_or("BSP rectangle required")?;
     let (cw, ch) = if rect.w >= rect.h {
         (1080.0, 1080.0 * f64::from(rect.h) / f64::from(rect.w))
@@ -513,4 +498,27 @@ pub fn generate(
         png: full,
         thumbnail,
     })
+}
+
+/// Exact full-image mean shared by upload preparation and direct rendering.
+pub fn bucket_mean(image: &RgbImage) -> Result<Lab, String> {
+    if image.dimensions() != (1080, 1080) {
+        return Err("input must be 1080 x 1080".into());
+    }
+    let mut sum = [0.0; 3];
+    // Bounded direct-mapped cache. Compare the complete RGB key on every hit;
+    // collisions only evict entries and never approximate a color.
+    let mut colors = vec![(u32::MAX, [0.0; 3]); 4096];
+    for pixel in image.pixels() {
+        let key = (u32::from(pixel[0]) << 16) | (u32::from(pixel[1]) << 8) | u32::from(pixel[2]);
+        let index = (key.wrapping_mul(0x9e3779b1) >> 20) as usize;
+        if colors[index].0 != key {
+            colors[index] = (key, lab_u8(pixel.0));
+        }
+        let value = colors[index].1;
+        for k in 0..3 {
+            sum[k] += value[k];
+        }
+    }
+    Ok(sum.map(|v| v / (1080.0 * 1080.0)))
 }

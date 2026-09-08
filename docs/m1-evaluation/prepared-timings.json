@@ -1,0 +1,73 @@
+[
+  {
+    "decode_count": 2000,
+    "phase": "preprocess",
+    "total_ms": 8982.2092,
+    "output": "preprocess"
+  },
+  {
+    "decode_count": 0,
+    "index_ms": 22.8436,
+    "input_mode": "prepared_bucket",
+    "output": "daily-0",
+    "prepare_ms": 27.522000000000002,
+    "render_encode_ms": 63.4735,
+    "sample_cache_hits": 0,
+    "sample_ms": 4.6784000000000034,
+    "total_ms": 100.80409999999999,
+    "unique_paths": 0,
+    "workers": 8
+  },
+  {
+    "decode_count": 0,
+    "index_ms": 17.5276,
+    "input_mode": "prepared_bucket",
+    "output": "daily-1",
+    "prepare_ms": 21.0185,
+    "render_encode_ms": 72.36149999999999,
+    "sample_cache_hits": 0,
+    "sample_ms": 3.4909,
+    "total_ms": 104.9382,
+    "unique_paths": 0,
+    "workers": 8
+  },
+  {
+    "decode_count": 0,
+    "index_ms": 19.4264,
+    "input_mode": "prepared_bucket",
+    "output": "daily-2",
+    "prepare_ms": 23.6016,
+    "render_encode_ms": 85.27170000000001,
+    "sample_cache_hits": 0,
+    "sample_ms": 4.1752,
+    "total_ms": 120.81500000000001,
+    "unique_paths": 0,
+    "workers": 8
+  },
+  {
+    "decode_count": 0,
+    "index_ms": 20.2197,
+    "input_mode": "prepared_bucket",
+    "output": "daily-3",
+    "prepare_ms": 25.4265,
+    "render_encode_ms": 76.3312,
+    "sample_cache_hits": 0,
+    "sample_ms": 5.206800000000001,
+    "total_ms": 110.67150000000001,
+    "unique_paths": 0,
+    "workers": 8
+  },
+  {
+    "decode_count": 0,
+    "index_ms": 19.5778,
+    "input_mode": "prepared_bucket",
+    "output": "daily-4",
+    "prepare_ms": 24.4803,
+    "render_encode_ms": 76.367,
+    "sample_cache_hits": 0,
+    "sample_ms": 4.9025,
+    "total_ms": 109.8742,
+    "unique_paths": 0,
+    "workers": 8
+  }
+]

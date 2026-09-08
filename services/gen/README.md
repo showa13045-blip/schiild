@@ -77,3 +77,21 @@ Oklab conversion follows the [author's published matrices](https://bottosson.git
 
 Per invocation, repeated manifest image paths share canonicalization and SHA calculation. Expected hashes are still checked on every row. Images are grouped by SHA and decoded once per group; samples are shared by tile dimensions. `--workers 1..8` controls bounded parallel preparation (default: available CPUs capped at eight, about 28 MB of decoded RGB at most). Pixel accumulation within each image remains sequential. Inputs must stay immutable during a run.
 Bucket averages use an exact 256-value sRGB transfer lookup and a bounded 4096-entry full-RGB-key cache. No pixels are skipped and accumulation order is unchanged. Bucket interpolation uses flat arrays with the same BFS order. See `docs/M1-PERFORMANCE.md` for byte-compatibility evidence and the still-unmet complete CLI latency requirement.
+
+## Bucket preprocessing and daily generation (approved separation)
+
+Prepare each uploaded JPEG independently, without a date, atelier, or palette:
+
+```sh
+gen --prepare-image photo.jpg --out prepared-photo
+```
+
+The output `bucket-means.json` contains `schema: "schiild-bucket-mean-v1"` and an `images` object mapping the SHA-256 of the original JPEG bytes to its exact three-component Oklab mean. Merge the `images` objects server-side by hash to supply a daily job. Preserve full f64 precision when storing and serializing these values. The version identifies the decoding/color/mean contract; incompatible preprocessing changes need a new version.
+
+For evaluation or backfill, prepare a whole manifest with the normal generation arguments plus `--prepare-bucket`. This writes only `bucket-means.json`; the single-image command is the upload-time entry point.
+
+Run the normal generation command with `--prepared-bucket path/to/bucket-means.json`. Manifest rows must provide `image_sha256`; `image` remains present for manifest compatibility but is not read. The daily job reads the manifest, means and palette, generates the seed, renders, encodes and saves all six artifacts. It performs no JPEG reads or decodes. Missing hashes, unknown schema, invalid values and BSP use are rejected. Frozen-seed removal accepts the same means file, with removed members omitted from the manifest.
+
+These records are trusted server-generated data, never client-supplied color claims. SHA associates the record with its verified original; it does not authenticate the mean. Server storage and upload APIs remain M2 work. Empty manifests are supported. Preprocessing, daily generation, and the existing complete JPEG CLI are measured separately. This approval applies to bucket mode; BSP still needs shape-dependent image preparation.
+
+Single-image preprocessing runs the decoder and mean calculation on a worker thread just like batch preparation. On this Windows environment, running that path on the initial thread produced last-bit differences in the mean. The upload/batch equality regression test guards against that difference; no tolerance or rounding is used to mask it.

@@ -30,6 +30,7 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install numpy==2.3.5 Pillow==12.3.0
       - run: python scripts/test-gen-cli.py --gen target/release/gen
+      - run: python scripts/test-prepared-bucket.py --gen target/release/gen --performance
       - run: pnpm --filter api build
       - run: pnpm build
         env:
