@@ -1,6 +1,10 @@
 packages:
   - apps/*
   - packages/*
+allowBuilds:
+  '@firebase/util': false
+  msgpackr-extract: false
+  protobufjs: false
 minimumReleaseAgeExclude:
   - '@typescript-eslint/eslint-plugin@8.70.0'
   - '@typescript-eslint/parser@8.70.0'

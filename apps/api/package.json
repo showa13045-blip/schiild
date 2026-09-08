@@ -3,21 +3,31 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "tsc",
-    "typecheck": "tsc --noEmit",
+    "build": "pnpm --filter @schiild/shared build && tsc",
+    "typecheck": "pnpm --filter @schiild/shared build && tsc --noEmit",
     "start": "node dist/main.js",
-    "test": "node --test scripts/database.test.mjs"
+    "test": "pnpm build && node --test scripts/*.test.mjs",
+    "worker": "node dist/worker.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1127.0",
     "@nestjs/common": "12.0.1",
     "@nestjs/core": "12.0.1",
     "@nestjs/platform-express": "12.0.1",
+    "bullmq": "^6.3.4",
+    "firebase-admin": "^14.3.0",
     "pg": "^8.23.0",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.2"
+    "rxjs": "^7.8.2",
+    "sharp": "^0.35.4",
+    "ws": "^8.21.3",
+    "@schiild/shared": "workspace:*"
   },
   "type": "module",
   "devDependencies": {
-    "@types/pg": "^8.23.1"
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.2.0",
+    "@types/pg": "^8.23.1",
+    "@types/ws": "^8.18.1"
   }
 }

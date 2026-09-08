@@ -18,7 +18,9 @@
     "test:gen-performance": "node scripts/cargo.mjs test --release -p gen --test determinism performance -- --ignored --nocapture",
     "db:migrate": "node apps/api/scripts/migrate.mjs",
     "db:seed": "node apps/api/scripts/seed.mjs",
-    "test:db": "node --test apps/api/scripts/database.test.mjs"
+    "test:db": "node --test apps/api/scripts/database.test.mjs",
+    "test:api": "pnpm --filter api test",
+    "dev:worker": "pnpm --filter api build && pnpm --filter api worker"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
