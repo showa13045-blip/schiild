@@ -1,56 +1,70 @@
-# M2 接続先の構成提案
+# M2 一般公開に向けた構成提案
 
-2026-09-09。サービスは未準備。ユーザーは「招待した少人数で試す」方針を選択済み。これは構成選定の提案であり、リソースは未作成。M2全体・本番接続は未完了。
+2026-09-09。ユーザーは最終的に「一般公開を目指す」と指定。少人数向けLightsail案を推奨から外し、以下へ切り替える。AWS・Firebaseは未準備で、リソース作成・デプロイは行っていない。M2全体・本番接続は未完了。
 
-## 推奨
+## 推奨構成
 
-[ASSUMPTION] ユーザーが選んだ招待制の少人数試験に対し、AWS東京のLightsail 4GB / 2 vCPUを1台使う案を推奨する。NestJS API・Rustワーカー・PostgreSQL 16・Redisをプロセス／コンテナで分け、写真はS3へ保存する。Firebase Auth、S3 + CloudFront、Redis + BullMQ、Terraformという仕様§8の選定は維持する。AWSの地域は東京を提案するが、Firebaseを含めた全データの国内限定を保証する構成ではない。
+[ASSUMPTION] AWS東京、2つのAZを使い、API・ワーカー・DB・キューを分離する。次の台数と容量は初期見積もり用。「一般公開」は個別サイズや料金の承認を意味しない。
 
-これは停止を許容できる試験向け。1台の障害でAPI・DB・キューが停止する。4GBで現在の生成並列数4が安全かは未測定なので、実機負荷試験でメモリ上限と並列数を調整する。UTC 00:00の生成から00:15の通知までの時間枠を実測する。
-
-| 用途 | 少人数試験の候補 | 公開運用へ進む際の候補 |
+| 用途 | 提案 | 残作業 |
 |---|---|---|
-| 認証・通知 | Firebase Auth / FCM | 同じ。認証方式、ユーザー対応付け、端末登録を実装・検証 |
-| API・生成 | Lightsail上でAPIとワーカーを分離 | ECS Fargateで別サービス、APIを複数AZへ配置 |
-| DB | PostgreSQL 16、外部へポート非公開 | RDS PostgreSQL 16、Multi-AZ、復元試験 |
-| キュー | Redis、AOF、noeviction、外部へ非公開 | ElastiCacheの非クラスタ構成を候補として接続・復旧試験 |
-| 写真・生成物 | 非公開S3 + CloudFront | 同じ。OACでS3への直接アクセスを制限 |
-| 画像審査 | Rekognitionの標準モデレーションを第一候補 | 同じ。独自学習モデルは当初不要 |
-| 監視 | 仕様のSentry / Datadogを候補、プラン未選定 | 日次処理遅延・DLQ・エラー・容量・復元の監視を具体化 |
-| 構成管理 | Terraformで作成内容をレビュー | 環境分離、変更レビュー、復旧手順を維持 |
+| 認証・通知 | Firebase Auth / FCM | 認証方式、ユーザー対応付け、端末登録、iOSのAPNs接続 |
+| API | ECS Fargate Linux x86、0.5 vCPU / 1GBを2タスク、ALB | Linuxコンテナ、HTTPS / WebSocket、ヘルスチェック |
+| 日次ワーカー | Fargate 1 vCPU / 2GBを2タスク | 複数タスク時の復旧・メモリ・並列数の実測 |
+| DB | RDS PostgreSQL 16、db.t4g.small、Multi-AZ、gp3 20GB | TLS、バックアップ復元、権限分離 |
+| キュー | ElastiCache Redis、cache.t4g.microを主系＋レプリカ、クラスタ無効 | noeviction、TLS、フェイルオーバー、容量試験 |
+| 写真・生成物 | 非公開S3 + CloudFront OAC | 配信URLと閲覧認可 |
+| 画像審査 | Rekognition標準DetectModerationLabelsを第一候補 | 既存HTTP契約へ結果を変換するゲートウェイ |
+| ネットワーク | 公開ALB、他は非公開サブネット、AZごとのNAT | 外向き通信・IPv4・転送を含む見積もり |
+| 監視・構成管理 | 仕様§8のSentry / Datadog、Terraform | プラン選定、日次遅延・DLQ・エラー・容量・課金監視 |
 
-BullMQはnoevictionと永続化が重要。マネージドRedisは単なるキャッシュとして設定せず、保持・フェイルオーバー特性を確認する。DBのgeneration_jobs/outboxから欠落キューを復旧する運用も必要。現在、この復旧運用は未実装。[BullMQ公式](https://docs.bullmq.io/guide/going-to-production)
+仕様§8のスタックを維持する。東京を提案するが、Firebaseを含む全データの国内限定を保証するものではない。将来のNext.js公開ページは今回作成していない。
 
-CloudFront OACはS3へのアクセス制限であり、閲覧者の認可を代替しない。写真原本を作品公開パスへ流さず、作品の公開範囲に合わせて署名URL等を設計する。現在のAPIが返す保存キーを配信URLへ変える処理は残っている。[AWS公式](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3.html)
+接続：端末 → ALB → API → DB / S3 / 審査ゲートウェイ。APIとワーカーがRedisおよびDBを共有し、ワーカーがRust生成・FCM送信を担当。作品配信はCloudFront → 非公開S3。
 
-## 画像審査で決めること
+BullMQはnoevictionと永続化が重要。マネージドRedisの保持・復旧特性を確認し、DBのgeneration_jobs/outboxから欠落キューを復旧する運用も必要。現在、この復旧運用は未実装。[BullMQ公式](https://docs.bullmq.io/guide/going-to-production)
 
-[ASSUMPTION] Rekognition DetectModerationLabelsを第一候補とする。現在のHTTPアダプターとAWS APIは別の契約なので、AWS結果を変換するゲートウェイが別途必要。まだAWSへ写真を送っていない。[サービス機能](https://docs.aws.amazon.com/rekognition/latest/dg/moderation.html)
+OACはS3へのアクセス制限であり、閲覧者の認可を代替しない。写真原本を作品公開パスへ流さず、公開範囲に合わせて署名URL等を設計する。現在の保存キーを配信URLへ変える処理は残っている。[AWS公式](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3.html)
 
-仕様§10.4に従い、高い確信度のときだけ除外し、灰色判定は通す。数値の閾値や除外ラベルは未確定で、評価用写真で誤除外を調べてから判断する。通信失敗は灰色判定ではなく503とする。
+## 概算の内訳
 
-顔があることから、写った本人の同意の有無は判定できない。顔検出だけを理由にperson除外へ変換しない。通常の不適切画像ラベルはotherへの対応を提案し、personを自動適用する条件は未解決事項として残す。新しい日本語文言は追加しない。
+AWS公開価格データの東京リージョン、オンデマンド、730時間/月、USD、税別。無料枠・為替換算は含めない。2026-09-09取得。費用の一部の計算であり、請求合計や性能保証ではない。
 
-## 費用の見方
+| 項目 | 計算 | 月額 USD |
+|---|---|---:|
+| Fargate計4タスク | 合計3 vCPU・6GB × 730h。vCPU 0.05056/h、GB 0.00553/h | 134.95 |
+| RDS Multi-AZ | 0.101/h × 730。待機系込みの単価 | 73.73 |
+| RDS gp3 20GB | 0.276/GB月 × 20 | 5.52 |
+| Redis 2ノード | 0.025/h × 2 × 730 | 36.50 |
+| ALB本体 | 0.0243/h × 730 | 17.74 |
+| ALB負荷の仮定 | 平均1 LCU × 0.008/h × 730 | 5.84 |
+| 上記小計 | 丸め前の値から計算 | **274.28** |
 
-公式表示を確認した時点のUSD、税別。無料体験・クレジット・為替換算を含めない。
+価格根拠：[Fargate東京データ](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonECS/current/ap-northeast-1/index.json)、[RDS東京データ](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonRDS/current/ap-northeast-1/index.json)、[Redis東京データ](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonElastiCache/current/ap-northeast-1/index.json)、[ALB東京データ](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSELB/current/ap-northeast-1/index.json)。current URLは将来変わる。延長サポート料は含めず、通常サポート内のエンジン版を選定する。
 
-- Lightsail Linux、公開IPv4付き、4GB / 2 vCPU / SSD 80GBの基本料金は月24 USD。追加のスナップショット、外部サービス、転送超過は別。[Lightsail料金](https://aws.amazon.com/lightsail/pricing/)
-- Firebase Authの電話認証はSMS送信ごとの課金。非電話の認証には無償枠があるが、電話認証を含む全体を無料とは見積もらない。送信先と回数を決めて算出する。[Firebase料金](https://firebase.google.com/pricing)
-- 審査は月間画像数×東京リージョンの標準API単価。Custom Moderationの料金と混同しない。今回、東京の確定単価を取得できていないため確定金額は記載しない。[Rekognition料金](https://aws.amazon.com/rekognition/pricing/)
-- S3容量・PUT/GET、CloudFront配信量、監視、バックアップ、ドメイン、SMS、審査ゲートウェイの実行費が別途必要。月24 USDは合計ではない。
+**小計に含まれないもの**：NAT本体・処理量、公開IPv4、AZ間通信、S3・CloudFront、審査とゲートウェイ、Firebase SMS、監視・ログ、秘密情報管理、ECR、超過バックアップ、DNS/ドメイン、CPUクレジット超過、増設、税金。月274.28 USDで運用全体を賄える意味ではない。作成前に全体見積もりを提示する。
 
-試算用の負荷を100人が毎日投稿、1枚平均200KB、30日と置くと、月3,000枚、写真原本だけで約0.6GB増加する。1,000人なら30,000枚・約6GB。これは画像サイズの仮定からの計算であり実測値ではない。作品6成果物・アトリエ数・再生成・バックアップ・閲覧通信を加算する。保存期間を勝手に短縮しない。
+可変費用：
 
-公開運用案は、FargateのCPU/メモリ常時稼働料金に、RDS、ElastiCache、ALB、NATまたは外向き通信経路、IPv4、ログ、保存・配信費を加算する。少人数試験の基本料金と同列には扱えない。サイズ・AZ・閲覧量未決のため総額未算出。作成前に東京のAWS Pricing Calculator見積もりを提示する。[Fargate料金](https://aws.amazon.com/fargate/pricing/)・[RDS料金](https://aws.amazon.com/rds/postgresql/pricing/)・[計算ツール](https://calculator.aws/)
+- Rekognition標準Group2は最初の100万画像で0.0013 USD/画像。100人×30日×1回なら3.90 USD、1,000人なら39.00 USD。再試行・別画像APIは加算。Custom Moderationとは別料金。[東京データ](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonRekognition/current/ap-northeast-1/index.json)
+- S3 Standardは最初の50TBで0.025 USD/GB月、PUT等は1,000回0.0047 USD、GET等は10,000回0.0037 USD。[東京データ](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/current/ap-northeast-1/index.json)
+- 100人が毎日投稿、平均200KB、30日なら月3,000枚・原本約0.6GB増加。1,000人なら30,000枚・約6GB。サイズは仮定。作品6成果物・アトリエ数・再生成・バックアップ・閲覧通信を加算し、保存期間は勝手に短縮しない。
+- Firebase電話認証はSMS送信ごとの課金。非電話認証には無償枠があるが、電話認証込みで無料とは見積もらない。[Firebase料金](https://firebase.google.com/pricing)
 
-## 準備する順序
+## 審査の未確定事項
 
-1. 試験人数、許容停止時間、月額予算を決めて試験案／公開案を確定する。
-2. Terraformの構成案、月額見積もり、写真の保存・配信範囲、審査ラベルをレビューする。
-3. 有料リソース作成の承認後、AWSとFirebaseをユーザーのアカウントで設定する。秘密鍵をチャットへ貼らず、サーバー側の秘密情報管理へ入れる。
-4. Linux向けRustビルド、DB権限・マイグレーション、Redis永続化、S3、審査、Firebaseを接続する。API用DBロールと移行用管理ロールを分ける。
-5. 認証・写真投稿・除外・生成・配信・端末通知・再起動／復元を実サービスで検証する。iPad通知の端末登録とAPNs設定も別途確認する。
+[ASSUMPTION] Rekognition標準モデレーションを第一候補とする。AWSへ写真は未送信。独自学習モデルは当初不要と提案する。[機能説明](https://docs.aws.amazon.com/rekognition/latest/dg/moderation.html)
 
-今回の成果は接続先候補と残作業の整理。構成を承認しただけでは課金リソース作成やPRマージの承認とは扱わない。
+仕様§10.4に従い、高い確信度のときだけ除外し、灰色判定は通す。閾値やラベルは評価用写真で誤除外を調べてから判断する。通信失敗は灰色判定ではなく503とする。
 
+顔の存在から本人の同意は判定できない。顔検出だけでperson除外にしない。通常の不適切画像ラベルはotherへの対応を提案し、personの自動適用条件は未解決として残す。新しい日本語文言は追加しない。
+
+## 公開前の進め方
+
+1. 想定利用人数・月額予算・認証方式を決め、通信を含む全体見積もりとTerraform案をレビュー。
+2. 有料リソース作成の承認後、ユーザーのAWS/Firebaseで設定。秘密鍵はチャットへ貼らずサーバー側の秘密情報管理へ入れる。
+3. Linuxビルド、DB権限、マイグレーション、Redis、S3、審査、認証、端末通知を接続。実行用DBロールと移行用管理ロールを分ける。
+4. 投稿・除外・生成・配信・通知を実サービスで確認。UTC 00:00から00:15の時間枠、重複防止、停止・復旧・バックアップ復元を測定。
+5. 公開範囲・画像アクセス制御・削除要請対応・レート制限・監視を確認し公開可否を判断。M2終了だけで一般公開の準備完了とはしない。
+
+今回確定したのは一般公開を目指す方針。個別構成・費用・審査閾値・有料リソース作成・PRマージは未承認。
