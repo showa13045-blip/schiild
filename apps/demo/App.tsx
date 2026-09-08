@@ -1,18 +1,20 @@
 import React,{useEffect,useRef,useState} from 'react';
 import {t} from './src/copy';
 import {dataUrl,decode,globalPixels,partition,random,render,shuffle,synthetic} from './src/engine';
-import {dayAfter,initial,load,REVEAL,revealTimes,save} from './src/model';
+import {dayAfter,initial,REVEAL,revealTimes} from './src/model';
 import type {State,Work} from './src/model';
 import './src/style.css';
+import type {Atelier} from './src/ateliers';
+export {default} from './src/AtelierApp';
 
-const atelier='あさ';
+
 const date=(day:string)=>day.replaceAll('-',' / ');
 const short=(day:string)=>`${Number(day.slice(5,7))}/${Number(day.slice(8))}`;
 const windowText=(day:string)=>t('atelier.window',{start:short(day)+' 09:00',end:short(dayAfter(day))+' 09:00'});
 function Icon({kind}:{kind:'camera'|'grid'|'global'|'archive'|'arrow'}){return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden="true">{kind==='camera'?<><path d="M3 7h5l2-3h4l2 3h5v14H3Z"/><rect x="9" y="11" width="6" height="6"/></>:kind==='grid'?<><rect x="3" y="3" width="18" height="18"/><path d="M3 12h18M13 3v9M9 12v9"/></>:kind==='global'?<><rect x="3" y="3" width="18" height="18"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></>:kind==='archive'?<><path d="M4 5h16v16H4ZM2 2h20M8 10h8"/></>:<path d="m9 5 7 7-7 7"/>}</svg>;}
 function Button({children,onClick,secondary=false,disabled=false}:{children:React.ReactNode;onClick:()=>void;secondary?:boolean;disabled?:boolean}){return <button className={secondary?'button secondary':'button'} onClick={onClick} disabled={disabled}>{children}</button>;}
 
-function Camera({day,onBack,onSubmit}:{day:string;onBack:()=>void;onSubmit:(url:string)=>void}){
+function Camera({day,atelier,onBack,onSubmit}:{day:string;atelier:string;onBack:()=>void;onSubmit:(url:string)=>void}){
  const video=useRef<HTMLVideoElement>(null),stream=useRef<MediaStream|null>(null);
  const [status,setStatus]=useState<'idle'|'loading'|'ready'|'denied'>('idle'),[preview,setPreview]=useState<string|null>(null),[failed,setFailed]=useState(false);
  useEffect(()=>()=>{stream.current?.getTracks().forEach(track=>track.stop());},[]);
@@ -26,11 +28,11 @@ function Camera({day,onBack,onSubmit}:{day:string;onBack:()=>void;onSubmit:(url:
  </section>;
 }
 
-function Reveal({work,onOpened,onNext}:{work:Work;onOpened:()=>void;onNext:()=>void}){
- const [started,setStarted]=useState(work.opened),[complete,setComplete]=useState(work.opened),[tiles,setTiles]=useState(work.opened?12:0),[record,setRecord]=useState(work.opened),[custody,setCustody]=useState(work.opened);
+function Reveal({work,atelier,onOpened,onNext}:{work:Work;atelier:string;onOpened:()=>void;onNext:()=>void}){
+ const [started,setStarted]=useState(work.opened),[complete,setComplete]=useState(work.opened),[tiles,setTiles]=useState(work.opened?work.rects.length:0),[record,setRecord]=useState(work.opened),[custody,setCustody]=useState(work.opened);
  const notify=useRef(onOpened);notify.current=onOpened;
- function finish(){setStarted(true);setTiles(12);setRecord(true);setCustody(true);setComplete(true);notify.current();}
- useEffect(()=>{if(!started||complete)return;if(matchMedia('(prefers-reduced-motion: reduce)').matches){finish();return;}const times=revealTimes(12),timers=work.order.map((_,n)=>setTimeout(()=>setTiles(n+1),REVEAL.start+n*REVEAL.interval));timers.push(setTimeout(()=>setRecord(true),times.record),setTimeout(()=>setCustody(true),times.custody),setTimeout(()=>{setComplete(true);notify.current();},times.custody+REVEAL.custodyFade));return()=>timers.forEach(clearTimeout);},[started,complete,work.day]);
+ function finish(){setStarted(true);setTiles(work.rects.length);setRecord(true);setCustody(true);setComplete(true);notify.current();}
+ useEffect(()=>{if(!started||complete)return;if(matchMedia('(prefers-reduced-motion: reduce)').matches){finish();return;}const times=revealTimes(work.rects.length),timers=work.order.map((_,n)=>setTimeout(()=>setTiles(n+1),REVEAL.start+n*REVEAL.interval));timers.push(setTimeout(()=>setRecord(true),times.record),setTimeout(()=>setCustody(true),times.custody),setTimeout(()=>{setComplete(true);notify.current();},times.custody+REVEAL.custodyFade));return()=>timers.forEach(clearTimeout);},[started,complete,work.day]);
  return <section className="reveal-page" data-testid="reveal" data-tiles={tiles} data-record={record} data-custody={custody}>
   <div className="wall-label">{t('schiild.label',{index:String(work.index).padStart(3,'0')})}</div>
   <button className="artboard reveal-board" aria-label={t(started?'common.done':'reveal.open')} onClick={()=>started?finish():setStarted(true)}>
@@ -38,7 +40,7 @@ function Reveal({work,onOpened,onNext}:{work:Work;onOpened:()=>void;onNext:()=>v
    {!started&&<div className="unopened-mark"><span/><span/><span/><span/></div>}
   </button>
   {!started?<div className="ready-copy"><p>{t('reveal.ready',{date:short(work.day)})}</p><p className="mono muted">{t('reveal.date',{date:date(work.day)})}</p><Button onClick={()=>setStarted(true)}>{t('reveal.open')}</Button></div>:<>
-   <div className="reveal-record" style={{opacity:record?1:0,transitionDuration:`${REVEAL.recordFade}ms`}}><h1>{atelier}</h1><p className="mono">{date(work.day)}　／　{work.count} {t('common.of')} 12</p><p className="window">{windowText(work.day)}</p></div>
+   <div className="reveal-record" style={{opacity:record?1:0,transitionDuration:`${REVEAL.recordFade}ms`}}><h1>{atelier}</h1><p className="mono">{date(work.day)}　／　{work.count} {t('common.of')} {work.rects.length}</p><p className="window">{windowText(work.day)}</p></div>
    <div className="custody" style={{opacity:custody?1:0,transitionDuration:`${REVEAL.custodyFade}ms`}}><span className="wall-label">{t('reveal.custody_label')}</span><p>{t(work.custody==='self'?'reveal.custody.self':'reveal.custody.other',{name:'ゆき'})}</p></div>
    {complete&&<Button onClick={onNext}>{t('global.label')} <Icon kind="arrow"/></Button>}
   </>}
@@ -58,12 +60,13 @@ function Global({work}:{work:Work|undefined}){
  </section>;
 }
 
-export default function App(){
- const [state,setState]=useState<State|null>(null),[screen,setScreen]=useState<'home'|'camera'|'work'|'global'|'archive'>('home'),[selected,setSelected]=useState<string|null>(null),[panel,setPanel]=useState(false),[busy,setBusy]=useState(false),[storageError,setStorageError]=useState(false);
+export function Experience({entry,onChange,onManage}:{entry:Atelier;onChange:(state:State)=>void;onManage:()=>void}){
+ const atelier=entry.name,cap=entry.capacity;
+ const [state,setState]=useState<State|null>(entry.state),[screen,setScreen]=useState<'home'|'camera'|'work'|'global'|'archive'>('home'),[selected,setSelected]=useState<string|null>(null),[panel,setPanel]=useState(false),[busy,setBusy]=useState(false),[storageError,setStorageError]=useState(false);
  const taps=useRef<number[]>([]);
- useEffect(()=>{document.documentElement.lang='ja';document.title='Schiild';setState(load());},[]);
- useEffect(()=>{if(state)try{save(state);setStorageError(false);}catch{setStorageError(true);}},[state]);
- useEffect(()=>{if(!state?.photo||state.ready||state.count>=10)return;const timer=setTimeout(()=>setState(old=>old?{...old,count:Math.min(10,old.count+1)}:old),2200);return()=>clearTimeout(timer);},[state?.count,state?.photo,state?.ready]);
+ useEffect(()=>{document.documentElement.lang='ja';document.title='Schiild';},[]);
+ useEffect(()=>{if(state)try{onChange(state);setStorageError(false);}catch{setStorageError(true);}},[state]);
+ useEffect(()=>{if(!state?.photo||state.ready||state.count>=Math.max(1,cap-2))return;const timer=setTimeout(()=>setState(old=>old?{...old,count:Math.min(Math.max(1,cap-2),old.count+1)}:old),2200);return()=>clearTimeout(timer);},[state?.count,state?.photo,state?.ready]);
  if(!state)return <div className="loading">{t('common.loading')}</div>;
  const work=state.works.find(w=>w.day===selected),globalWork=state.works.find(w=>w.global&&w.opened);
  function hidden(){const now=Date.now();taps.current=[...taps.current.filter(time=>now-time<1100),now];if(taps.current.length>=3){setPanel(true);taps.current=[];}}
@@ -72,24 +75,24 @@ export default function App(){
   const photo=state.photo?await decode(state.photo):null;
   const image=dataUrl(render(state.rects,state.rects.map(r=>r.slot===0?photo:r.slot<state.count?synthetic(state.seed+r.slot*33):null),state.seed));
   const global=photo?globalPixels(photo,state.seed):null;
-  const made:Work={day:state.day,image,rects:state.rects,order:shuffle(state.rects.map(r=>r.slot),random(state.seed+31)),count:state.count,index:state.works[0].index+1,custody:state.winner,opened:false,...(global?{global:dataUrl(global.pixels),x:global.x,y:global.y}:{})};
+  const made:Work={day:state.day,image,rects:state.rects,order:shuffle(state.rects.map(r=>r.slot),random(state.seed+31)),count:state.count,index:(state.works[0]?.index??0)+1,custody:state.winner,opened:false,...(global?{global:dataUrl(global.pixels),x:global.x,y:global.y}:{})};
   setState({...state,ready:state.day,works:[made,...state.works.filter(w=>w.day!==state.day)]});setSelected(state.day);navigate('work');setPanel(false);
  }catch{setStorageError(true);}finally{setBusy(false);}}
- function nextDay(){if(!state)return;const seed=state.seed+131;setState({...state,day:dayAfter(state.day),seed,rects:partition(12,random(seed)),photo:null,count:2,ready:null});setPanel(false);navigate('home');}
+ function nextDay(){if(!state)return;const seed=state.seed+131;setState({...state,day:dayAfter(state.day),seed,rects:partition(cap,random(seed)),photo:null,count:0,ready:null});setPanel(false);navigate('home');}
  const tabs=[['home','grid','home.title'],['global','global','global.label'],['archive','archive','archive.title']] as const;
  return <div className="app"><header className="header"><button className="brand" onClick={hidden} aria-label="Schiild"><span className="brand-symbol"><i/><i/><i/></span>Schiild</button><span className="header-date mono">{date(state.day)}</span></header>
  <main>{storageError&&<p className="error" role="alert">{t('error.server.title')}</p>}
- {screen==='home'&&<section><div className="eyebrow">{t('home.title')}</div><div className="title-row"><h1>{atelier}</h1><span className="mono">01 / 01</span></div>
+ {screen==='home'&&<section><div className="eyebrow">{t('home.title')}</div><div className="title-row"><h1>{atelier}</h1><button className="text-button" onClick={onManage}>{t('home.title')} ＋</button></div>
   <div className="artboard today-board" data-testid="today-board">{state.rects.map(rect=>{const filled=rect.slot===0?Boolean(state.photo):rect.slot<=(state.photo?state.count-1:state.count);return <div key={rect.slot} className={`today-tile ${filled?'filled':''}`} style={{left:`${rect.x/128*100}%`,top:`${rect.y/128*100}%`,width:`${rect.w/128*100}%`,height:`${rect.h/128*100}%`,background:filled?['#b5b7a5','#c39582','#87a6b0','#d7c49a','#61777a'][rect.slot%5]:undefined}}/>;})}</div>
-  <div className="today-details"><div><span className="wall-label">{t('atelier.closes_in')}</span><p className="countdown">{state.ready?'00:00:00':'00:15:00'}</p></div><div className="recorded"><span className="mono">{t('atelier.recorded',{n:state.count,cap:12})}</span><div className="members">{Array.from({length:12},(_,n)=><i key={n} className={n<state.count?'recorded':''}/>)}</div></div></div><p className="window">{windowText(state.day)}</p>
-  {state.ready?<Button onClick={()=>{setSelected(state.ready);navigate('work');}}>{t('reveal.open')}</Button>:state.photo?<div className="posted"><p>{t('posted.title')}<br/>{t('posted.title2')}</p>{state.count>=10&&<span className="muted">{t('atelier.almost',{n:12-state.count})}</span>}</div>:<Button onClick={()=>navigate('camera')}><Icon kind="camera"/>{t('onboarding.1.title')}</Button>}
+  <div className="today-details"><div><span className="wall-label">{t('atelier.closes_in')}</span><p className="countdown">{state.ready?'00:00:00':'00:15:00'}</p></div><div className="recorded"><span className="mono">{t('atelier.recorded',{n:state.count,cap})}</span><div className="members">{Array.from({length:cap},(_,n)=><i key={n} className={n<state.count?'recorded':''}/>)}</div></div></div><p className="window">{windowText(state.day)}</p>
+  {state.day<entry.activeFrom?<p>{t('join.tomorrow')}</p>:state.ready?<Button onClick={()=>{setSelected(state.ready);navigate('work');}}>{t('reveal.open')}</Button>:state.photo?<div className="posted"><p>{t('posted.title')}<br/>{t('posted.title2')}</p>{state.count>=Math.max(1,cap-2)&&<span className="muted">{t('atelier.almost',{n:cap-state.count})}</span>}</div>:<Button onClick={()=>navigate('camera')}><Icon kind="camera"/>{t('onboarding.1.title')}</Button>}
   <div className="section-heading"><h2>{t('atelier.past')}</h2><button className="text-button" onClick={()=>navigate('archive')}><Icon kind="arrow"/></button></div><div className="recent">{state.works.filter(w=>w.opened).slice(0,3).map(w=><button key={w.day} onClick={()=>{setSelected(w.day);navigate('work');}}><img src={w.image} alt={t('schiild.label',{index:w.index})}/><span className="mono">{short(w.day)}</span></button>)}</div>
  </section>}
- {screen==='camera'&&<Camera day={state.day} onBack={()=>navigate('home')} onSubmit={url=>{setState({...state,photo:url,count:state.count+1});navigate('home');}}/>}
- {screen==='work'&&work&&<Reveal key={work.day} work={work} onOpened={()=>setState(old=>old?{...old,works:old.works.map(w=>w.day===work.day?{...w,opened:true}:w)}:old)} onNext={()=>navigate('global')}/>}
+ {screen==='camera'&&<Camera atelier={atelier} day={state.day} onBack={()=>navigate('home')} onSubmit={url=>{setState({...state,photo:url,count:state.count+1});navigate('home');}}/>}
+ {screen==='work'&&work&&<Reveal atelier={atelier} key={work.day} work={work} onOpened={()=>setState(old=>old?{...old,works:old.works.map(w=>w.day===work.day?{...w,opened:true}:w)}:old)} onNext={()=>navigate('global')}/>}
  {screen==='global'&&<Global work={globalWork}/>}
  {screen==='archive'&&<section><div className="eyebrow">{t('me.link.archive')}</div><h1>{state.day.slice(0,4)}</h1><div className="stats"><div><span>{t('archive.total')}</span><b>{state.works.filter(w=>w.opened).length}</b></div><div><span>{t('archive.month_stat')}</span><b>{state.works.filter(w=>w.opened&&w.day.slice(0,7)===state.day.slice(0,7)).length}</b></div></div><p className="archive-note">{t('archive.note')}</p><div className="archive-grid">{state.works.filter(w=>w.opened).map(w=><button key={w.day} onClick={()=>{setSelected(w.day);navigate('work');}}><img src={w.image} alt={t('schiild.label',{index:w.index})}/><div className="archive-caption"><span className="mono">{short(w.day)}</span><span className="mono">{String(w.index).padStart(3,'0')}</span></div></button>)}</div></section>}
  </main><nav className="nav">{tabs.map(([next,kind,key])=><button key={next} className={screen===next?'active':''} onClick={()=>navigate(next)}><Icon kind={kind}/><span>{t(key)}</span></button>)}</nav>
- {panel&&<div className="modal-shade"><section className="dialog operator" role="dialog" aria-modal="true" aria-label={t('common.today')}><div className="title-row"><h2>{t('common.today')}</h2><button className="text-button" onClick={()=>setPanel(false)}>{t('common.close')}</button></div><p className="mono">{date(state.day)} → {date(dayAfter(state.day))}</p><Button disabled={busy} onClick={()=>state.ready?nextDay():void advance()}>{t(busy?'common.loading':'common.next')} → 00:15 UTC</Button><div className="choice"><button className={state.winner==='self'?'chosen':''} onClick={()=>setState({...state,winner:'self'})}>{t('reveal.custody.self')}</button><button className={state.winner==='other'?'chosen':''} onClick={()=>setState({...state,winner:'other'})}>{t('reveal.custody.other',{name:'ゆき'})}</button></div><Button secondary onClick={()=>{if(!state.ready)return;setState({...state,works:state.works.map(w=>w.day===state.ready?{...w,opened:false,custody:state.winner}:w)});setSelected(state.ready);navigate('work');setScreen('home');setTimeout(()=>navigate('work'),0);setPanel(false);}} disabled={!state.ready}>{t('reveal.open')}</Button><Button secondary onClick={()=>{setState(initial());setSelected(null);setPanel(false);navigate('home');}}>{t('common.retry')}</Button></section></div>}
+ {panel&&<div className="modal-shade"><section className="dialog operator" role="dialog" aria-modal="true" aria-label={t('common.today')}><div className="title-row"><h2>{t('common.today')}</h2><button className="text-button" onClick={()=>setPanel(false)}>{t('common.close')}</button></div><p className="mono">{date(state.day)} → {date(dayAfter(state.day))}</p><Button disabled={busy} onClick={()=>state.ready?nextDay():void advance()}>{t(busy?'common.loading':'common.next')} → 00:15 UTC</Button><div className="choice"><button className={state.winner==='self'?'chosen':''} onClick={()=>setState({...state,winner:'self'})}>{t('reveal.custody.self')}</button><button className={state.winner==='other'?'chosen':''} onClick={()=>setState({...state,winner:'other'})}>{t('reveal.custody.other',{name:'ゆき'})}</button></div><Button secondary onClick={()=>{if(!state.ready)return;setState({...state,works:state.works.map(w=>w.day===state.ready?{...w,opened:false,custody:state.winner}:w)});setSelected(state.ready);navigate('work');setScreen('home');setTimeout(()=>navigate('work'),0);setPanel(false);}} disabled={!state.ready}>{t('reveal.open')}</Button><Button secondary onClick={()=>{setState(initial(cap,entry.code==='ASADEMO1'));setSelected(null);setPanel(false);navigate('home');}}>{t('common.retry')}</Button></section></div>}
  </div>;
 }

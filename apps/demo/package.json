@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test scripts/*.test.mjs",
     "build:web": "node scripts/sync-copy.mjs && node scripts/expo.mjs export --platform web",
-    "test:browser": "node scripts/browser-test.mjs"
+    "test:browser": "node scripts/browser-test.mjs && node scripts/ateliers-browser.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",

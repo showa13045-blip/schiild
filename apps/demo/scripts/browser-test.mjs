@@ -13,7 +13,7 @@ try{
  await page.getByRole('button',{name:'1日に1枚だけ',exact:true}).click();await page.getByRole('button',{name:'次へ',exact:true}).click();await page.locator('.shutter:not([disabled])').waitFor();await page.locator('.shutter').click();await page.getByText('今日のシールは一度きりです',{exact:true}).waitFor();
  await page.screenshot({path:'test-results/confirm.png',fullPage:true,animations:'disabled'});await page.getByRole('button',{name:'確定する',exact:true}).click();await page.locator('.posted').waitFor();await page.reload();await page.locator('.posted').waitFor();
  assert.equal(await page.locator('input[type=file]').count(),0);
- await page.waitForFunction(()=>JSON.parse(localStorage.getItem('schiild.demo.v1')).count===10);await panel();await page.getByRole('button',{name:/次へ.*00:15 UTC/}).click();await page.getByTestId('reveal').waitFor();assert.equal(await page.locator('.reveal-board img').count(),0);
+ await page.waitForFunction(()=>JSON.parse(localStorage.getItem('schiild.demo.ateliers.v2')).ateliers[0].state.count===10);await panel();await page.getByRole('button',{name:/次へ.*00:15 UTC/}).click();await page.getByTestId('reveal').waitFor();assert.equal(await page.locator('.reveal-board img').count(),0);
  await page.clock.install({time:new Date('2030-01-01T00:00:00Z')});await page.clock.pauseAt(new Date('2030-01-01T00:00:01Z'));await page.getByRole('button',{name:'ひらく',exact:true}).last().click();
  await page.clock.runFor(119);assert.equal(await page.getByTestId('reveal').getAttribute('data-tiles'),'0');
  await page.clock.runFor(1);assert.equal(await page.getByTestId('reveal').getAttribute('data-tiles'),'1');
