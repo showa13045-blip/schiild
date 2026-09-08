@@ -11,3 +11,6 @@ target/
 .env.*
 !.env.example
 
+
+__pycache__/
+*.pyc

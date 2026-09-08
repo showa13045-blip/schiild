@@ -1,0 +1,434 @@
+[
+  {
+    "output": "n1-fill0.25",
+    "prepare_ms": 3.4467999999999996,
+    "render_encode_ms": 13.9896,
+    "total_ms": 26.3418,
+    "label": "n1-fill0.25",
+    "capacity": 1,
+    "fill_rate": 0.25
+  },
+  {
+    "output": "n1-fill0.5",
+    "prepare_ms": 40.484100000000005,
+    "render_encode_ms": 24.8344,
+    "total_ms": 73.917,
+    "label": "n1-fill0.5",
+    "capacity": 1,
+    "fill_rate": 0.5
+  },
+  {
+    "output": "n1-fill0.75",
+    "prepare_ms": 34.458999999999996,
+    "render_encode_ms": 30.427699999999998,
+    "total_ms": 72.8397,
+    "label": "n1-fill0.75",
+    "capacity": 1,
+    "fill_rate": 0.75
+  },
+  {
+    "output": "n1-fill1",
+    "prepare_ms": 34.753,
+    "render_encode_ms": 26.7851,
+    "total_ms": 71.4208,
+    "label": "n1-fill1",
+    "capacity": 1,
+    "fill_rate": 1.0
+  },
+  {
+    "output": "n3-fill0.25",
+    "prepare_ms": 21.6977,
+    "render_encode_ms": 16.5214,
+    "total_ms": 48.32899999999999,
+    "label": "n3-fill0.25",
+    "capacity": 3,
+    "fill_rate": 0.25
+  },
+  {
+    "output": "n3-fill0.5",
+    "prepare_ms": 47.6229,
+    "render_encode_ms": 24.781299999999998,
+    "total_ms": 86.8351,
+    "label": "n3-fill0.5",
+    "capacity": 3,
+    "fill_rate": 0.5
+  },
+  {
+    "output": "n3-fill0.75",
+    "prepare_ms": 48.650999999999996,
+    "render_encode_ms": 29.123900000000003,
+    "total_ms": 90.3761,
+    "label": "n3-fill0.75",
+    "capacity": 3,
+    "fill_rate": 0.75
+  },
+  {
+    "output": "n3-fill1",
+    "prepare_ms": 81.2214,
+    "render_encode_ms": 56.5819,
+    "total_ms": 149.5157,
+    "label": "n3-fill1",
+    "capacity": 3,
+    "fill_rate": 1.0
+  },
+  {
+    "output": "n7-fill0.25",
+    "prepare_ms": 55.7878,
+    "render_encode_ms": 21.54,
+    "total_ms": 86.8806,
+    "label": "n7-fill0.25",
+    "capacity": 7,
+    "fill_rate": 0.25
+  },
+  {
+    "output": "n7-fill0.5",
+    "prepare_ms": 76.5432,
+    "render_encode_ms": 18.6738,
+    "total_ms": 104.708,
+    "label": "n7-fill0.5",
+    "capacity": 7,
+    "fill_rate": 0.5
+  },
+  {
+    "output": "n7-fill0.75",
+    "prepare_ms": 112.8025,
+    "render_encode_ms": 28.2117,
+    "total_ms": 150.9781,
+    "label": "n7-fill0.75",
+    "capacity": 7,
+    "fill_rate": 0.75
+  },
+  {
+    "output": "n7-fill1",
+    "prepare_ms": 167.9474,
+    "render_encode_ms": 34.8387,
+    "total_ms": 212.7181,
+    "label": "n7-fill1",
+    "capacity": 7,
+    "fill_rate": 1.0
+  },
+  {
+    "output": "n12-fill0.25",
+    "prepare_ms": 59.6802,
+    "render_encode_ms": 15.803399999999998,
+    "total_ms": 88.1976,
+    "label": "n12-fill0.25",
+    "capacity": 12,
+    "fill_rate": 0.25
+  },
+  {
+    "output": "n12-fill0.5",
+    "prepare_ms": 152.8417,
+    "render_encode_ms": 23.4917,
+    "total_ms": 189.12109999999998,
+    "label": "n12-fill0.5",
+    "capacity": 12,
+    "fill_rate": 0.5
+  },
+  {
+    "output": "n12-fill0.75",
+    "prepare_ms": 196.3435,
+    "render_encode_ms": 26.784499999999998,
+    "total_ms": 233.1876,
+    "label": "n12-fill0.75",
+    "capacity": 12,
+    "fill_rate": 0.75
+  },
+  {
+    "output": "n12-fill1",
+    "prepare_ms": 265.58759999999995,
+    "render_encode_ms": 30.2668,
+    "total_ms": 307.13669999999996,
+    "label": "n12-fill1",
+    "capacity": 12,
+    "fill_rate": 1.0
+  },
+  {
+    "output": "n50-fill0.25",
+    "prepare_ms": 301.7517,
+    "render_encode_ms": 26.7488,
+    "total_ms": 341.0857,
+    "label": "n50-fill0.25",
+    "capacity": 50,
+    "fill_rate": 0.25
+  },
+  {
+    "output": "n50-fill0.5",
+    "prepare_ms": 498.2369,
+    "render_encode_ms": 22.589000000000002,
+    "total_ms": 531.0745999999999,
+    "label": "n50-fill0.5",
+    "capacity": 50,
+    "fill_rate": 0.5
+  },
+  {
+    "output": "n50-fill0.75",
+    "prepare_ms": 635.2738999999999,
+    "render_encode_ms": 20.9974,
+    "total_ms": 666.5283,
+    "label": "n50-fill0.75",
+    "capacity": 50,
+    "fill_rate": 0.75
+  },
+  {
+    "output": "n50-fill1",
+    "prepare_ms": 868.1299,
+    "render_encode_ms": 25.148699999999998,
+    "total_ms": 902.4449,
+    "label": "n50-fill1",
+    "capacity": 50,
+    "fill_rate": 1.0
+  },
+  {
+    "output": "n200-fill0.25",
+    "prepare_ms": 612.9485,
+    "render_encode_ms": 13.9569,
+    "total_ms": 634.6678,
+    "label": "n200-fill0.25",
+    "capacity": 200,
+    "fill_rate": 0.25
+  },
+  {
+    "output": "n200-fill0.5",
+    "prepare_ms": 1170.7376000000002,
+    "render_encode_ms": 22.9104,
+    "total_ms": 1205.547,
+    "label": "n200-fill0.5",
+    "capacity": 200,
+    "fill_rate": 0.5
+  },
+  {
+    "output": "n200-fill0.75",
+    "prepare_ms": 2098.2702,
+    "render_encode_ms": 18.514200000000002,
+    "total_ms": 2122.727,
+    "label": "n200-fill0.75",
+    "capacity": 200,
+    "fill_rate": 0.75
+  },
+  {
+    "output": "n200-fill1",
+    "prepare_ms": 2223.9269999999997,
+    "render_encode_ms": 31.521399999999996,
+    "total_ms": 2268.3265,
+    "label": "n200-fill1",
+    "capacity": 200,
+    "fill_rate": 1.0
+  },
+  {
+    "output": "n500-fill0.25",
+    "prepare_ms": 1434.2764,
+    "render_encode_ms": 28.314700000000002,
+    "total_ms": 1469.7576,
+    "label": "n500-fill0.25",
+    "capacity": 500,
+    "fill_rate": 0.25
+  },
+  {
+    "output": "n500-fill0.5",
+    "prepare_ms": 3214.8339,
+    "render_encode_ms": 43.764900000000004,
+    "total_ms": 3271.0114,
+    "label": "n500-fill0.5",
+    "capacity": 500,
+    "fill_rate": 0.5
+  },
+  {
+    "output": "n500-fill0.75",
+    "prepare_ms": 4146.718500000001,
+    "render_encode_ms": 56.385,
+    "total_ms": 4213.3171,
+    "label": "n500-fill0.75",
+    "capacity": 500,
+    "fill_rate": 0.75
+  },
+  {
+    "output": "n500-fill1",
+    "prepare_ms": 5585.644,
+    "render_encode_ms": 58.979499999999994,
+    "total_ms": 5652.1039,
+    "label": "n500-fill1",
+    "capacity": 500,
+    "fill_rate": 1.0
+  },
+  {
+    "output": "n2000-fill0.25",
+    "prepare_ms": 5937.3508,
+    "render_encode_ms": 95.7397,
+    "total_ms": 6041.4516,
+    "label": "n2000-fill0.25",
+    "capacity": 2000,
+    "fill_rate": 0.25
+  },
+  {
+    "output": "n2000-fill0.5",
+    "prepare_ms": 6506.4271,
+    "render_encode_ms": 95.008,
+    "total_ms": 6612.1582,
+    "label": "n2000-fill0.5",
+    "capacity": 2000,
+    "fill_rate": 0.5
+  },
+  {
+    "output": "n2000-fill0.75",
+    "prepare_ms": 6430.2025,
+    "render_encode_ms": 118.6822,
+    "total_ms": 6560.3171,
+    "label": "n2000-fill0.75",
+    "capacity": 2000,
+    "fill_rate": 0.75
+  },
+  {
+    "output": "n2000-fill1",
+    "prepare_ms": 7486.81,
+    "render_encode_ms": 80.22609999999999,
+    "total_ms": 7575.9757,
+    "label": "n2000-fill1",
+    "capacity": 2000,
+    "fill_rate": 1.0
+  },
+  {
+    "output": "gutter-0",
+    "prepare_ms": 127.801,
+    "render_encode_ms": 23.0338,
+    "total_ms": 159.8552,
+    "label": "gutter-0",
+    "capacity": 12,
+    "fill_rate": 0.75
+  },
+  {
+    "output": "gutter-1",
+    "prepare_ms": 137.4485,
+    "render_encode_ms": 20.6876,
+    "total_ms": 165.95589999999999,
+    "label": "gutter-1",
+    "capacity": 12,
+    "fill_rate": 0.75
+  },
+  {
+    "output": "gutter-2",
+    "prepare_ms": 107.7563,
+    "render_encode_ms": 17.7429,
+    "total_ms": 132.1856,
+    "label": "gutter-2",
+    "capacity": 12,
+    "fill_rate": 0.75
+  },
+  {
+    "output": "gutter-3",
+    "prepare_ms": 113.60919999999999,
+    "render_encode_ms": 18.6589,
+    "total_ms": 140.9441,
+    "label": "gutter-3",
+    "capacity": 12,
+    "fill_rate": 0.75
+  },
+  {
+    "output": "r96-d0-p4",
+    "prepare_ms": 102.4066,
+    "render_encode_ms": 11.810899999999998,
+    "total_ms": 121.0102,
+    "label": "r96-d0-p4",
+    "capacity": 12,
+    "fill_rate": 0.75
+  },
+  {
+    "output": "r96-d0-p8",
+    "prepare_ms": 117.1699,
+    "render_encode_ms": 12.453000000000001,
+    "total_ms": 136.7575,
+    "label": "r96-d0-p8",
+    "capacity": 12,
+    "fill_rate": 0.75
+  },
+  {
+    "output": "r96-d0.6-p4",
+    "prepare_ms": 125.5975,
+    "render_encode_ms": 14.4505,
+    "total_ms": 147.694,
+    "label": "r96-d0.6-p4",
+    "capacity": 12,
+    "fill_rate": 0.75
+  },
+  {
+    "output": "r96-d0.6-p8",
+    "prepare_ms": 121.7166,
+    "render_encode_ms": 17.343600000000002,
+    "total_ms": 146.83370000000002,
+    "label": "r96-d0.6-p8",
+    "capacity": 12,
+    "fill_rate": 0.75
+  },
+  {
+    "output": "r96-d1-p4",
+    "prepare_ms": 129.24720000000002,
+    "render_encode_ms": 14.4496,
+    "total_ms": 151.4917,
+    "label": "r96-d1-p4",
+    "capacity": 12,
+    "fill_rate": 0.75
+  },
+  {
+    "output": "r96-d1-p8",
+    "prepare_ms": 114.8081,
+    "render_encode_ms": 14.7728,
+    "total_ms": 138.1088,
+    "label": "r96-d1-p8",
+    "capacity": 12,
+    "fill_rate": 0.75
+  },
+  {
+    "output": "r128-d0-p4",
+    "prepare_ms": 152.9501,
+    "render_encode_ms": 18.5082,
+    "total_ms": 181.3972,
+    "label": "r128-d0-p4",
+    "capacity": 12,
+    "fill_rate": 0.75
+  },
+  {
+    "output": "r128-d0-p8",
+    "prepare_ms": 131.5836,
+    "render_encode_ms": 18.659599999999998,
+    "total_ms": 159.239,
+    "label": "r128-d0-p8",
+    "capacity": 12,
+    "fill_rate": 0.75
+  },
+  {
+    "output": "r128-d0.6-p4",
+    "prepare_ms": 148.36669999999998,
+    "render_encode_ms": 24.200699999999998,
+    "total_ms": 184.28820000000002,
+    "label": "r128-d0.6-p4",
+    "capacity": 12,
+    "fill_rate": 0.75
+  },
+  {
+    "output": "r128-d0.6-p8",
+    "prepare_ms": 143.2228,
+    "render_encode_ms": 23.0805,
+    "total_ms": 176.9533,
+    "label": "r128-d0.6-p8",
+    "capacity": 12,
+    "fill_rate": 0.75
+  },
+  {
+    "output": "r128-d1-p4",
+    "prepare_ms": 127.89729999999999,
+    "render_encode_ms": 21.4049,
+    "total_ms": 158.2982,
+    "label": "r128-d1-p4",
+    "capacity": 12,
+    "fill_rate": 0.75
+  },
+  {
+    "output": "r128-d1-p8",
+    "prepare_ms": 126.9401,
+    "render_encode_ms": 20.3771,
+    "total_ms": 158.36929999999998,
+    "label": "r128-d1-p8",
+    "capacity": 12,
+    "fill_rate": 0.75
+  }
+]

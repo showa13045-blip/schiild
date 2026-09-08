@@ -5,4 +5,23 @@ edition = "2021"
 publish = false
 
 [lib]
-path = "src/lib.rs"
+crate-type = ["rlib", "cdylib"]
+
+[features]
+default = ["native"]
+native = ["dep:image", "dep:clap", "dep:uuid"]
+
+[dependencies]
+rand_chacha = "=0.3.1"
+rand_core = "=0.6.4"
+sha2 = "0.10"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+image = { version = "0.25", default-features = false, features = ["jpeg", "png"], optional = true }
+clap = { version = "4", default-features = false, features = ["derive", "std", "help", "usage", "error-context"], optional = true }
+uuid = { version = "1", features = ["serde"], optional = true }
+
+[[bin]]
+name = "gen"
+path = "src/main.rs"
+required-features = ["native"]

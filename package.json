@@ -11,7 +11,11 @@
     "build": "pnpm --filter mobile build",
     "dev:api": "pnpm --filter api build && pnpm --filter api start",
     "check:requirements": "node scripts/check-requirements.mjs",
-    "test:rust": "node scripts/test-rust.mjs"
+    "test:rust": "node scripts/cargo.mjs test --workspace",
+    "build:gen": "node scripts/cargo.mjs build --release -p gen --locked",
+    "build:wasm": "node scripts/cargo.mjs build --release -p gen --target wasm32-unknown-unknown --no-default-features --lib --locked",
+    "test:wasm": "node --test tests/wasm.integration.mjs",
+    "test:gen-performance": "node scripts/cargo.mjs test --release -p gen --test determinism performance -- --ignored --nocapture"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
