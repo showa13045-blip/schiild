@@ -7,7 +7,7 @@ Build the native M1 executable and WASM with `pnpm build:gen` and `pnpm build:wa
 
 Required environment: `DATABASE_URL`, `S3_BUCKET`, `AWS_REGION`, `GEN_EXECUTABLE`, `GEN_WASM`, `GEN_PALETTE`; workers also require `REDIS_URL`. M1 paths are absolute. Firebase uses application default credentials and its configured project. No credentials are committed.
 
-**Image moderation is not configured yet.** The production entry point uses UnconfiguredModerator and rejects uploads with 503 until a reviewed provider is wired in. Integration tests inject an explicit approved mock; production never auto-approves images. This is not a deployable finished M2 release.
+**The moderation adapter is implemented; a real provider is not configured yet.** Set MODERATION_URL and MODERATION_TOKEN for the HTTPS gateway contract in MODERATION.md. Missing configuration rejects uploads with 503; partial/invalid configuration stops startup. Integration tests inject explicit mocks; production never auto-approves images. Run `pnpm --filter api check:config` for a value-free offline configuration check. This is not a deployable finished M2 release.
 
 Firebase ID tokens are verified with revocation checking. The verified UID must match an active `users.firebase_uid` row. Client-supplied user IDs are not accepted. Account provisioning and push-device registration are currently administrative DB operations; the original Phase 1 endpoint list does not specify their APIs. Do not use the migration/admin DB credentials for the deployed application; use a login granted schiild_app.
 
@@ -33,6 +33,6 @@ Notifications are an idempotent per-user/per-day outbox created at UTC 00:15. us
 
 ## Tests
 
-`pnpm --filter api test` needs a dedicated PostgreSQL 16 DATABASE_URL with database-creation permission, plus built native/WASM artifacts. HTTP tests create a randomly named isolated database and drop it on completion. External auth, storage and moderation are mocked; JPEG processing, Rust generation, WASM and PostgreSQL run for real. Queue schedule contracts are unit-tested; live Redis/FCM/S3/Firebase credentials are not exercised locally.
+`pnpm --filter api test` needs a dedicated PostgreSQL 16 DATABASE_URL with database-creation permission, plus built native/WASM artifacts. HTTP tests create a randomly named isolated database and drop it on completion. External auth, storage and moderation are mocked; JPEG processing, Rust generation, WASM and PostgreSQL run for real. Queue schedule contracts are unit-tested; when REDIS_URL is set, real Redis tests also verify retry exhaustion/DLQ and notification progress while generation workers are occupied. CI supplies Redis 7. Live FCM/S3/Firebase credentials are not exercised locally.
 
 Official references: [Firebase token verification](https://firebase.google.com/docs/auth/admin/verify-id-tokens), [Nest uploads](https://docs.nestjs.com/techniques/file-upload), [BullMQ schedulers](https://docs.bullmq.io/guide/job-schedulers/).

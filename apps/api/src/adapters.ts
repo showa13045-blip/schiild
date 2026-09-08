@@ -9,7 +9,7 @@ import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {loadBsp} from '@schiild/shared/bsp';
 import {generationSeed} from './lottery.js';
-import type {Authenticator,ObjectStore,Engine,GenerationInput,PushSender,Moderator} from './ports.js';
+import type {Authenticator,ObjectStore,Engine,GenerationInput,PushSender,Moderator,ModerationResult} from './ports.js';
 import {ApiError} from './errors.js';
 const exec=promisify(execFile);
 export function firebase(){return getApps()[0]??initializeApp({credential:applicationDefault()});}
@@ -22,7 +22,7 @@ export class S3Store implements ObjectStore {
  async get(key:string){const r=await this.client.send(new GetObjectCommand({Bucket:this.bucket,Key:key}));if(!r.Body)throw new Error('missing_object');return Buffer.from(await r.Body.transformToByteArray());}
  async remove(key:string){await this.client.send(new DeleteObjectCommand({Bucket:this.bucket,Key:key}));}
 }
-export class UnconfiguredModerator implements Moderator {async review(_bytes:Buffer):Promise<'approved'|'rejected'>{throw new ApiError(503,'moderation_unconfigured');}}
+export class UnconfiguredModerator implements Moderator {async review(_bytes:Buffer):Promise<ModerationResult>{throw new ApiError(503,'moderation_unconfigured');}}
 export class RustEngine implements Engine {
  private layoutPromise:ReturnType<typeof loadBsp>|undefined;
  constructor(private store:ObjectStore,private executable:string,private wasmPath:string,private palettePath:string){}

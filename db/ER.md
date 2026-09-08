@@ -16,6 +16,11 @@ erDiagram
     schiilds ||--o{ schiild_revisions : revisions
     schiild_revisions ||--o{ schiild_revision_removals : removes
     schiils ||--o{ schiild_revision_removals : referenced
+    ateliers o|--o{ generation_jobs : tracks
+    users ||--o{ notification_outbox : receives
+    users ||--o{ push_devices : registers
+    schiils ||--o| moderation_outbox : review_notice
+    users ||--o{ moderation_outbox : receives
 ```
 
 全生命作品はatelier_idがNULL。同じ日付のNULL同士もUNIQUEで重複を拒否する。

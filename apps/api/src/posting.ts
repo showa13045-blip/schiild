@@ -40,11 +40,12 @@ export class Posting {
    await this.store.put(key,clean,'image/jpeg');
    try {
     if(utcDay(this.now())!==day)throw new ApiError(409,'window_closed',{copyKey:'error.window_closed'});
-    await client.query(`INSERT INTO schiils(id,user_id,schiild_date,image_key,image_sha256,caption,moderation_state,created_at,bucket_mean) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`,[schiilId,userId,day,key,hash,captionValue??null,moderation,at,mean]);
+    await client.query(`INSERT INTO schiils(id,user_id,schiild_date,image_key,image_sha256,caption,moderation_state,created_at,bucket_mean,moderation_reason) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,[schiilId,userId,day,key,hash,captionValue??null,moderation.decision,at,mean,moderation.decision==='rejected'?moderation.reason:null]);
+    if(moderation.decision==='rejected')await client.query('INSERT INTO moderation_outbox(schiil_id,user_id,reason) VALUES($1,$2,$3)',[schiilId,userId,moderation.reason]);
     for(const atelierId of ateliers) await client.query('INSERT INTO schiil_posts(id,schiil_id,atelier_id,user_id,schiild_date,posted_at) VALUES($1,$2,$3,$4,$5,$6)',[randomUUID(),schiilId,atelierId,userId,day,at]);
    } catch(error) { await this.store.remove(key).catch(()=>{});throw error; }
    await client.query("SELECT pg_notify('schiild_live',$1)",[JSON.stringify(ateliers)]);
-   return {schiilId,schiildDate:day,atelierIds:ateliers};
+   return {schiilId,schiildDate:day,atelierIds:ateliers,moderation};
   });
  }
  async add(userId:string,schiilId:SchiilId,atelierValue:unknown) {

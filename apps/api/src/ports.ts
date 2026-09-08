@@ -6,7 +6,8 @@ export interface ObjectStore {
   get(key: string): Promise<Buffer>;
   remove(key: string): Promise<void>;
 }
-export interface Moderator { review(bytes: Buffer): Promise<'approved' | 'rejected'> }
+export type ModerationResult = { decision: 'approved' } | { decision: 'rejected'; reason: 'person' | 'other' };
+export interface Moderator { review(bytes: Buffer): Promise<ModerationResult> }
 export interface GenerationInput { userId: string; slotIndex: number; hash: string; imageKey: string; mean: number[] }
 export interface Generated {
   image: Buffer; thumbnail: Buffer; state: Buffer;

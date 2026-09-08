@@ -5,9 +5,10 @@
   "scripts": {
     "build": "pnpm --filter @schiild/shared build && tsc",
     "typecheck": "pnpm --filter @schiild/shared build && tsc --noEmit",
-    "start": "node dist/main.js",
+    "start": "node --env-file-if-exists=.env dist/main.js",
     "test": "pnpm build && node --test scripts/*.test.mjs",
-    "worker": "node dist/worker.js"
+    "worker": "node --env-file-if-exists=.env dist/worker.js",
+    "check:config": "node --env-file-if-exists=.env scripts/check-config.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1127.0",

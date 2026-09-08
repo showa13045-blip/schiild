@@ -41,6 +41,17 @@ export class DailyGeneration {
   ) THEN 'generation_failed' ELSE 'daily_ready' END,'schiildDate',$1::text)
   FROM users u WHERE u.deleted_at IS NULL ON CONFLICT(user_id,schiild_date) DO NOTHING`,[day]);
  }
+ async deliverModeration(push:PushSender){
+  return this.db.transaction(async c=>{
+   const rows=await c.query('SELECT o.schiil_id,o.user_id,o.reason,s.schiild_date::text FROM moderation_outbox o JOIN schiils s ON s.id=o.schiil_id WHERE o.delivered_at IS NULL ORDER BY o.created_at LIMIT 100 FOR UPDATE OF o SKIP LOCKED');
+   for(const row of rows.rows){
+    const devices=await c.query('SELECT token FROM push_devices WHERE user_id=$1 AND enabled',[row.user_id]);
+    for(const device of devices.rows)await push.send(device.token,{type:'moderation_excluded',schiilId:row.schiil_id,schiildDate:row.schiild_date,reason:row.reason,titleKey:'push.excluded.title',bodyKey:'push.excluded.body'});
+    await c.query('UPDATE moderation_outbox SET delivered_at=now() WHERE schiil_id=$1',[row.schiil_id]);
+   }
+   return rows.rowCount;
+  });
+ }
  async deliver(push:PushSender){
   return this.db.transaction(async c=>{const rows=await c.query('SELECT id AS notification_id,user_id,payload FROM notification_outbox WHERE delivered_at IS NULL ORDER BY created_at LIMIT 100 FOR UPDATE SKIP LOCKED');
    for(const row of rows.rows){const devices=await c.query('SELECT token FROM push_devices WHERE user_id=$1 AND enabled',[row.user_id]);for(const device of devices.rows)await push.send(device.token,row.payload);await c.query('UPDATE notification_outbox SET delivered_at=now() WHERE id=$1',[row.notification_id]);}return rows.rowCount;

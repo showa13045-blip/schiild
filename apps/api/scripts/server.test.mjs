@@ -31,9 +31,10 @@ test('authenticated HTTP, JPEG atomic submission, UTC boundary, real generation,
   const objects=new Map();let failStore=false;
   const store={put:async(key,bytes)=>{if(failStore)throw Error('storage_unavailable');objects.set(key,bytes);},get:async key=>{if(!objects.has(key))throw Error('missing');return objects.get(key);},remove:async key=>{objects.delete(key);}};
   const engine=new RustEngine(store,resolve(repo,process.platform==='win32'?'target/release/gen.exe':'target/release/gen'),resolve(repo,'target/wasm32-unknown-unknown/release/gen.wasm'),resolve(repo,'services/gen/palettes/provisional-32.json'));
+  let moderation={decision:'approved'},moderationOutage=false;
   let now=new Date('2030-01-01T23:59:00Z');
   const auth={verify:async token=>{if(!['one','two'].includes(token))throw Error('invalid');return {uid:token};}};
-  server=await createApi({db,store,engine,auth,moderator:{review:async()=> 'approved'},now:()=>now});
+  server=await createApi({db,store,engine,auth,moderator:{review:async()=>{if(moderationOutage)throw Error('moderation_unavailable');return moderation;}},now:()=>now});
   await server.app.listen(0,'127.0.0.1');const base=await server.app.getUrl();
   async function request(path,{token='one',body,method='GET'}={}){const headers={};if(token)headers.authorization=`Bearer ${token}`;if(body && !(body instanceof FormData))headers['content-type']='application/json';return fetch(base+'/v1/'+path,{method,headers,body:body instanceof FormData?body:body?JSON.stringify(body):undefined});}
   const image=await sharp({create:{width:1080,height:1080,channels:3,background:'#456789'}}).withMetadata({exif:{IFD0:{Copyright:'test-exif'}}}).jpeg().toBuffer();
@@ -41,6 +42,7 @@ test('authenticated HTTP, JPEG atomic submission, UTC boundary, real generation,
   assert.equal((await request('ateliers',{token:null})).status,401);
   assert.equal((await request('ateliers',{token:'forged'})).status,401);
   const wrong=await sharp({create:{width:100,height:100,channels:3,background:'#000000'}}).jpeg().toBuffer();assert.equal((await upload('one',wrong)).status,400);
+  moderationOutage=true;assert.equal((await upload()).status,503);moderationOutage=false;
   failStore=true;assert.equal((await upload()).status,503);failStore=false;
   assert.equal(Number((await db.pool.query('SELECT count(*) FROM schiils')).rows[0].count),0);
   socket=new WebSocket(base.replace('http:','ws:')+`/v1/ateliers/${atelier}/live`);await once(socket,'open');
@@ -66,6 +68,12 @@ test('authenticated HTTP, JPEG atomic submission, UTC boundary, real generation,
   assert.equal((await db.pool.query('SELECT custodian_user_id FROM schiild_custody WHERE schiild_id=$1',[generated.schiildId])).rows[0].custodian_user_id,null);
   const global=await daily.run('2030-01-01',null);assert.equal(global.status,'succeeded');
   assert.equal((await db.pool.query('SELECT custodian_user_id FROM schiild_custody WHERE schiild_id=$1',[global.schiildId])).rows[0].custodian_user_id,null);
+  moderation={decision:'rejected',reason:'person'};now=new Date('2030-01-03T12:00:00Z');
+  const rejectedResponse=await upload();assert.equal(rejectedResponse.status,201);const rejected=await rejectedResponse.json();assert.equal(rejected.moderation.reason,'person');
+  assert.equal((await upload()).status,409);
+  assert.equal((await db.pool.query('SELECT reason FROM moderation_outbox WHERE schiil_id=$1',[rejected.schiilId])).rows[0].reason,'person');
+  await db.pool.query('INSERT INTO push_devices(user_id,token) VALUES($1,$2)',[first,'fixture-device']);const notices=[];await daily.deliverModeration({send:async(token,data)=>notices.push({token,data})});await daily.deliverModeration({send:async()=>assert.fail('duplicate notice')});assert.equal(notices.length,1);assert.equal(notices[0].data.reason,'person');
+  const excluded=await daily.run('2030-01-03',atelier);assert.equal(excluded.status,'succeeded');assert.equal(Number((await db.pool.query('SELECT participant_count FROM schiilds WHERE id=$1',[excluded.schiildId])).rows[0].participant_count),0);
   const broken=new DailyGeneration(db,{...engine,generate:async()=>{throw Error('forced');}},store);await assert.rejects(broken.run('2029-12-31',atelier));
   assert.equal((await db.pool.query("SELECT status FROM generation_jobs WHERE schiild_date='2029-12-31' AND atelier_id=$1",[atelier])).rows[0].status,'failed');assert.equal(Number((await db.pool.query("SELECT count(*) FROM schiilds WHERE schiild_date='2029-12-31'")).rows[0].count),0);
   await assert.rejects(daily.notifications('2030-01-01',new Date('2030-01-02T00:14:59Z')));
