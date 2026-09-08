@@ -46,7 +46,7 @@ cargo test -p gen determinism
 ## PR instructions
 
 - タイトル形式: `[<area>] <要約>` — area は `gen` / `api` / `mobile` / `db` / `shared`
-- 1つのPRで1つのタスク（`TASKS.md` の T番号）を扱う。複数のタスクをまとめない
+- 1つのPRで1つのマイルストーン（`MILESTONES.md` の M番号）を扱う。複数のマイルストーンをまとめない
 - PR本文に、そのタスクの受け入れ条件をチェックリストとして貼り、達成状況を書く
 - 仕様と食い違う実装をした場合、その理由を `[ASSUMPTION]` として本文に明記する
 
