@@ -1,0 +1,8 @@
+{
+  "expo": {
+    "name": "Schiild", "slug": "schiild", "version": "0.1.0", "orientation": "portrait", "userInterfaceStyle": "light",
+    "ios": { "supportsTablet": true, "bundleIdentifier": "app.schiild.mobile" },
+    "android": { "package": "app.schiild.mobile" },
+    "plugins": [["expo-camera", { "cameraPermission": "今日のシールを撮影するためにカメラを使用します。", "recordAudioAndroid": false }]]
+  }
+}
