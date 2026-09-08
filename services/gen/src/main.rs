@@ -46,6 +46,8 @@ struct Args {
     layout_only: bool,
     #[arg(long, default_value_t = 1)]
     schiild_index: u64,
+    #[arg(long)]
+    workers: Option<usize>,
 }
 #[derive(Deserialize)]
 struct Entry {
@@ -140,16 +142,22 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut members = Vec::new();
     let mut paths = Vec::new();
     let mut seen = BTreeSet::new();
+    let mut file_cache: BTreeMap<String, (PathBuf, String)> = BTreeMap::new();
     for entry in entries {
         if entry.slot_index >= config.capacity || !seen.insert(entry.slot_index) {
             return Err("invalid manifest slot".into());
         }
-        let path = fs::canonicalize(root.join(&entry.image))?;
-        if !path.starts_with(&root) {
-            return Err("image escapes input directory".into());
-        }
-        let bytes = fs::read(&path)?;
-        let hash = hex(&Sha256::digest(&bytes));
+        let (path, hash) = if let Some(cached) = file_cache.get(&entry.image) {
+            cached.clone()
+        } else {
+            let path = fs::canonicalize(root.join(&entry.image))?;
+            if !path.starts_with(&root) {
+                return Err("image escapes input directory".into());
+            }
+            let hash = hex(&Sha256::digest(fs::read(&path)?));
+            file_cache.insert(entry.image.clone(), (path.clone(), hash.clone()));
+            (path, hash)
+        };
         if entry.image_sha256.is_some_and(|expected| expected != hash) {
             return Err("image hash mismatch".into());
         }
@@ -160,6 +168,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         });
         paths.push(path);
     }
+    let indexed_ms = start.elapsed().as_secs_f64() * 1000.0;
     let frozen = args.frozen_seed.as_deref().map(seed_hex).transpose()?;
     let seed = generation_seed(&config, &members, frozen)?;
     let previous = args
@@ -179,28 +188,93 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         bsp(seed, config.capacity, resolution, config.variance)?
     };
-    type SampleCache = BTreeMap<(String, Option<(u32, u32)>), Vec<gen::color::Lab>>;
-    let mut cache: SampleCache = BTreeMap::new();
-    let mut inputs = Vec::new();
+    let workers = args.workers.unwrap_or_else(|| {
+        std::thread::available_parallelism()
+            .map_or(1, usize::from)
+            .min(8)
+    });
+    if workers == 0 || workers > 8 {
+        return Err("workers must be between 1 and 8".into());
+    }
+    type Group = (PathBuf, Vec<Member>);
+    let mut groups: BTreeMap<String, Group> = BTreeMap::new();
     for (member, path) in members.into_iter().zip(paths) {
-        let rect = rects.get(member.slot_index).copied();
-        let key = (member.image_sha256.clone(), rect.map(|r| (r.w, r.h)));
-        let samples = if let Some(samples) = cache.get(&key) {
-            samples.clone()
-        } else {
-            let bytes = fs::read(path)?;
-            if hex(&Sha256::digest(&bytes)) != member.image_sha256 {
-                return Err("input changed during preparation".into());
-            }
-            if image::guess_format(&bytes)? != image::ImageFormat::Jpeg {
-                return Err("input must be JPEG".into());
-            }
-            let image = image::load_from_memory(&bytes)?.to_rgb8();
-            let prepared = prepare(&image, member.clone(), rect, &config)?;
-            cache.insert(key, prepared.samples.clone());
-            prepared.samples
-        };
-        inputs.push(Prepared { member, samples });
+        groups
+            .entry(member.image_sha256.clone())
+            .or_insert_with(|| (path, Vec::new()))
+            .1
+            .push(member);
+    }
+    let groups = groups.into_values().collect::<Vec<_>>();
+    let decode_count = groups.len();
+    let batch_size = groups.len().div_ceil(workers).max(1);
+    // Each image is decoded once, then all required shapes are prepared on the same worker.
+    // Pixel accumulation inside prepare() stays strictly sequential.
+    let results = std::thread::scope(|scope| {
+        let handles = groups
+            .chunks(batch_size)
+            .map(|chunk| {
+                let config = &config;
+                let rects = &rects;
+                scope.spawn(move || -> Result<(Vec<Prepared>, usize), String> {
+                    let mut prepared_inputs = Vec::new();
+                    let mut hits = 0usize;
+                    for (path, members) in chunk {
+                        let bytes = fs::read(path).map_err(|e| e.to_string())?;
+                        if hex(&Sha256::digest(&bytes)) != members[0].image_sha256 {
+                            return Err("input changed during preparation".into());
+                        }
+                        if image::guess_format(&bytes).map_err(|e| e.to_string())?
+                            != image::ImageFormat::Jpeg
+                        {
+                            return Err("input must be JPEG".into());
+                        }
+                        let image = image::load_from_memory(&bytes)
+                            .map_err(|e| e.to_string())?
+                            .to_rgb8();
+                        if image.dimensions() != (1080, 1080) {
+                            return Err("input must be 1080 x 1080".into());
+                        }
+                        let mut samples_by_shape: BTreeMap<
+                            Option<(u32, u32)>,
+                            Vec<gen::color::Lab>,
+                        > = BTreeMap::new();
+                        for member in members {
+                            let rect = rects.get(member.slot_index).copied();
+                            let key = rect.map(|r| (r.w, r.h));
+                            let samples = if let Some(samples) = samples_by_shape.get(&key) {
+                                hits += 1;
+                                samples.clone()
+                            } else {
+                                let samples =
+                                    prepare(&image, member.clone(), rect, config)?.samples;
+                                samples_by_shape.insert(key, samples.clone());
+                                samples
+                            };
+                            prepared_inputs.push(Prepared {
+                                member: member.clone(),
+                                samples,
+                            });
+                        }
+                    }
+                    Ok((prepared_inputs, hits))
+                })
+            })
+            .collect::<Vec<_>>();
+        handles
+            .into_iter()
+            .map(|handle| {
+                handle
+                    .join()
+                    .map_err(|_| "image worker panicked".to_string())?
+            })
+            .collect::<Result<Vec<_>, String>>()
+    })?;
+    let mut inputs = Vec::new();
+    let mut sample_hits = 0usize;
+    for (batch, hits) in results {
+        inputs.extend(batch);
+        sample_hits += hits;
     }
     let prepared_ms = start.elapsed().as_secs_f64() * 1000.0;
     let render_start = Instant::now();
@@ -225,7 +299,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     fs::write(out.join("used_seed.txt"), format!("{}\n", hex(&seed)))?;
     println!(
         "{}",
-        serde_json::json!({"prepare_ms":prepared_ms,"render_encode_ms":render_ms,"total_ms":start.elapsed().as_secs_f64()*1000.0,"output":out})
+        serde_json::json!({"workers":workers,"index_ms":indexed_ms,"sample_ms":prepared_ms-indexed_ms,"unique_paths":file_cache.len(),"decode_count":decode_count,"sample_cache_hits":sample_hits,"prepare_ms":prepared_ms,"render_encode_ms":render_ms,"total_ms":start.elapsed().as_secs_f64()*1000.0,"output":out})
     );
     Ok(())
 }

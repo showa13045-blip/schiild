@@ -1,6 +1,6 @@
 use crate::{
     bsp,
-    color::{lab, nearest, Lab},
+    color::{lab, lab_u8, nearest, Lab},
     Rect,
 };
 use image::{
@@ -144,8 +144,17 @@ pub fn prepare(
     }
     if config.tier == "bucket" {
         let mut sum = [0.0; 3];
+        // Bounded direct-mapped cache. Compare the complete RGB key on every hit;
+        // collisions only evict entries and never approximate a color.
+        let mut colors = vec![(u32::MAX, [0.0; 3]); 4096];
         for pixel in image.pixels() {
-            let value = lab(pixel.0.map(f64::from));
+            let key =
+                (u32::from(pixel[0]) << 16) | (u32::from(pixel[1]) << 8) | u32::from(pixel[2]);
+            let index = (key.wrapping_mul(0x9e3779b1) >> 20) as usize;
+            if colors[index].0 != key {
+                colors[index] = (key, lab_u8(pixel.0));
+            }
+            let value = colors[index].1;
             for k in 0..3 {
                 sum[k] += value[k];
             }
@@ -239,15 +248,23 @@ fn png(pixels: &[u8], size: u32, palette: &[[u8; 3]], output: u32) -> Result<Vec
 /// Propagation is synchronous in BFS layers. No occupied cells means seeded VoidCells.
 fn interpolate(pixels: &mut [u8], occupied: &BTreeMap<usize, Lab>, size: usize, palette: &[Lab]) {
     let mut queue = VecDeque::new();
-    let mut sources = vec![Vec::<usize>::new(); pixels.len()];
+    let mut sources = vec![[usize::MAX; 4]; pixels.len()];
+    let mut lengths = vec![0usize; pixels.len()];
+    let mut known = vec![false; pixels.len()];
+    let mut values = vec![[0.0; 3]; pixels.len()];
+    for (&position, &value) in occupied {
+        known[position] = true;
+        values[position] = value;
+    }
     for &source in occupied.keys() {
         queue.push_back((source, source));
     }
     while let Some((position, source)) = queue.pop_front() {
-        if sources[position].len() == 4 || sources[position].contains(&source) {
+        if lengths[position] == 4 || sources[position][..lengths[position]].contains(&source) {
             continue;
         }
-        sources[position].push(source);
+        sources[position][lengths[position]] = source;
+        lengths[position] += 1;
         let (x, y) = (position % size, position / size);
         if x > 0 {
             queue.push_back((position - 1, source));
@@ -262,14 +279,15 @@ fn interpolate(pixels: &mut [u8], occupied: &BTreeMap<usize, Lab>, size: usize, 
             queue.push_back((position + size, source));
         }
     }
-    for (position, neighbors) in sources.iter().enumerate() {
-        if occupied.contains_key(&position) || neighbors.is_empty() {
+    for (position, entries) in sources.iter().enumerate() {
+        let neighbors = &entries[..lengths[position]];
+        if known[position] || neighbors.is_empty() {
             continue;
         }
         let mut value = [0.0; 3];
         for source in neighbors {
             for (k, v) in value.iter_mut().enumerate() {
-                *v += occupied[source][k];
+                *v += values[*source][k];
             }
         }
         pixels[position] = nearest(value.map(|v| v / neighbors.len() as f64), palette) as u8;

@@ -216,3 +216,28 @@ fn performance_2000_prepared_members_under_200ms() {
     );
     assert!(elapsed < std::time::Duration::from_millis(200));
 }
+
+#[test]
+fn rgb_cache_preserves_full_image_average_bits() {
+    let c = config(2000);
+    let member = prepared(&c, [0; 32], 1).remove(0).member;
+    let image = image::RgbImage::from_fn(1080, 1080, |x, y| {
+        image::Rgb([
+            ((x * 17 + y * 11) % 256) as u8,
+            ((x * 7 + y * 29) % 256) as u8,
+            ((x + y * 13) % 256) as u8,
+        ])
+    });
+    let actual = prepare(&image, member, None, &c).unwrap().samples[0];
+    let mut sum = [0.0; 3];
+    for pixel in image.pixels() {
+        let value = lab(pixel.0.map(f64::from));
+        for k in 0..3 {
+            sum[k] += value[k];
+        }
+    }
+    assert_eq!(
+        actual.map(f64::to_bits),
+        sum.map(|v| (v / (1080.0 * 1080.0)).to_bits())
+    );
+}

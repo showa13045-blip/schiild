@@ -19,9 +19,13 @@ def main():
             command=[args.gen,'--atelier-id',str(uuid.UUID(int=100)),'--date','2026-09-08','--capacity',str(capacity),'--input-dir',str(inputs),'--palette',str(pal),'--out',str(destination),*extra]
             result=subprocess.run(command,capture_output=True,text=True)
             assert (result.returncode==0)==success,(command,result.stderr)
+            if success:
+                stats=json.loads(result.stdout)
+                assert stats['unique_paths']==len({item['image'] for item in items})
+                assert stats['decode_count']==len({item['image'] for item in items})
             return destination
         for capacity in [12,2000]:
-            first=run(capacity,f'first{capacity}',entries);second=run(capacity,f'second{capacity}',entries[::-1])
+            first=run(capacity,f'first{capacity}',entries,['--workers','4']);second=run(capacity,f'second{capacity}',entries[::-1],['--workers','1'])
             for filename in ['schiild.png','thumbnail.png','region_map.json','metadata.json','state.json','used_seed.txt']:assert (first/filename).read_bytes()==(second/filename).read_bytes(),filename
             seed=(first/'used_seed.txt').read_text().strip();extra=['--frozen-seed',seed,'--previous',str(first)]
             revised=run(capacity,f'revised{capacity}',entries[1:],extra)
@@ -35,8 +39,10 @@ def main():
                 run(capacity,'wrong-seed',entries[1:],['--frozen-seed','00'*32,'--previous',str(first)],success=False)
                 replacement=[{**entries[0],'image':'2.jpg'},*entries[1:]]
                 run(capacity,'replacement',replacement,extra,success=False)
+        run(12,'bad-workers',entries,['--workers','0'],success=False)
         run(12,'duplicate',entries+[entries[0]],success=False)
         bad=[{**entries[0],'image_sha256':'00'*32}];run(12,'bad-hash',bad,success=False)
+        cached_bad=[*entries[:2],{**entries[2],'image_sha256':'00'*32}];run(12,'bad-cached-hash',cached_bad,success=False)
         Image.new('RGB',(100,100)).save(inputs/'bad.jpg');run(12,'bad-size',[{**entries[0],'image':'bad.jpg'}],success=False)
     print('CLI JPEG determinism, BSP/bucket removal, collision, frozen metadata, input validation and palette checks passed')
 if __name__=='__main__':main()

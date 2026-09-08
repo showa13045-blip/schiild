@@ -72,3 +72,8 @@ Use `gen.exe` on Windows. The analytical palette is provisional: six fixed neutr
 Evaluation produces participation/fill, gutter and resolution/dither/posterize contact sheets plus timing JSON. Inputs are explicitly synthetic JPEG fixtures, not real user photographs or substitute works in the app. Synthetic images cannot establish photographic G-4 visual acceptance.
 
 Oklab conversion follows the [author's published matrices](https://bottosson.github.io/posts/oklab/). Native/WASM tests compare layout only; cross-architecture rendering PNG equality is not yet claimed.
+
+## Preparation optimizations
+
+Per invocation, repeated manifest image paths share canonicalization and SHA calculation. Expected hashes are still checked on every row. Images are grouped by SHA and decoded once per group; samples are shared by tile dimensions. `--workers 1..8` controls bounded parallel preparation (default: available CPUs capped at eight, about 28 MB of decoded RGB at most). Pixel accumulation within each image remains sequential. Inputs must stay immutable during a run.
+Bucket averages use an exact 256-value sRGB transfer lookup and a bounded 4096-entry full-RGB-key cache. No pixels are skipped and accumulation order is unchanged. Bucket interpolation uses flat arrays with the same BFS order. See `docs/M1-PERFORMANCE.md` for byte-compatibility evidence and the still-unmet complete CLI latency requirement.
