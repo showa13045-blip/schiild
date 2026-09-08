@@ -3,16 +3,33 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "tsc",
-    "typecheck": "tsc --noEmit",
-    "start": "node dist/main.js"
+    "build": "pnpm --filter @schiild/shared build && tsc",
+    "typecheck": "pnpm --filter @schiild/shared build && tsc --noEmit",
+    "start": "node --env-file-if-exists=.env dist/main.js",
+    "test": "pnpm build && node --test scripts/*.test.mjs",
+    "worker": "node --env-file-if-exists=.env dist/worker.js",
+    "check:config": "node --env-file-if-exists=.env scripts/check-config.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1127.0",
     "@nestjs/common": "12.0.1",
     "@nestjs/core": "12.0.1",
     "@nestjs/platform-express": "12.0.1",
+    "@schiild/shared": "workspace:*",
+    "bullmq": "^6.3.4",
+    "firebase-admin": "^14.3.0",
+    "ioredis": "^5.11.1",
+    "pg": "^8.23.0",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.2"
+    "rxjs": "^7.8.2",
+    "sharp": "^0.35.4",
+    "ws": "^8.21.3"
   },
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.2.0",
+    "@types/pg": "^8.23.1",
+    "@types/ws": "^8.18.1"
+  }
 }
