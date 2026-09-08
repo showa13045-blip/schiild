@@ -13,7 +13,7 @@ pnpm test:wasm
 pnpm test:gen-performance
 ```
 
-The performance test measures **prepared samples → rendering and PNG encoding**, not JPEG decoding, hashing, sample preparation or disk writes. The full CLI currently exceeds 200 ms. See `docs/M1-REPORT.md`; do not interpret the core benchmark as passing the entire M1 latency requirement.
+The performance test measures **prepared samples → rendering and PNG encoding**, not JPEG decoding, hashing, sample preparation or disk writes. The JPEG-input CLI exceeds 200 ms. The approved prepared-bucket daily CLI includes file reads and artifact writes and measured 101–121 ms for 2000 distinct JPEG-derived records. Its separate regression test is `python scripts/test-prepared-bucket.py --gen target/release/gen --performance`. See `docs/M1-REPORT.md` for measurement boundaries and `docs/M1-REVIEW.md` for remaining review decisions.
 
 ## Input
 
