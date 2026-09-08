@@ -43,7 +43,7 @@ pnpm --filter demo build:web
 
 ## Netlifyへ配置
 
-継続利用にはNetlifyのユーザーアカウントが必要。アプリ自体にはログインを設けない。今回の配置先は https://beautiful-blini-cc1221.netlify.app/ 。
+継続利用にはNetlifyのユーザーアカウントが必要。アプリ自体にはログインを設けない。今回の配置先は https://schiildmoc.netlify.app/ 。
 
 匿名デプロイを利用した場合は1時間以内にアカウントへ引き取る。その後、プロジェクトがPrivateなら概要画面の **Make public** を選ぶ。引き取りだけでは公開設定は変わらない。シークレットウィンドウでログインなしのアクセスを確認してからURLを配る。
 
