@@ -1,7 +1,7 @@
 name: Demo checks
 on:
   push:
-    branches: [demo]
+    branches: [demo, 'fix/**']
   workflow_dispatch:
 jobs:
   demo:
@@ -19,7 +19,7 @@ jobs:
       - run: pnpm --filter demo test
       - run: pnpm --filter demo build:web
       - run: pnpm --filter demo exec playwright install --with-deps chromium
-      - run: node apps/demo/scripts/serve.mjs &
+      - run: node apps/demo/scripts/serve.mjs > /tmp/schiild-demo.log 2>&1 &
       - run: pnpm --filter demo test:browser
       - uses: actions/upload-artifact@v4
         if: always()

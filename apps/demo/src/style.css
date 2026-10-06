@@ -5,3 +5,16 @@
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:0ms!important;transition-delay:0ms!important;animation:none!important}}
 .app{width:100%}
 .atelier-app section>p,.atelier-app section>h2{margin:20px 0}.atelier-app .button{margin-top:16px}.field{display:block;margin:24px 0;font-size:12px}.field input,.atelier-app textarea{display:block;width:100%;padding:16px;margin-top:8px;background:var(--sunken);border:1px solid var(--strong);border-radius:8px;font:inherit;font-size:16px;color:var(--ink)}.atelier-app textarea{height:112px;resize:vertical;overflow-wrap:anywhere}.capacities{display:flex;gap:8px;margin:16px 0}.capacities button{flex:1;padding:16px;border:1px solid var(--strong);border-radius:8px}.capacities [aria-pressed=true]{background:var(--ink);color:white}.capacity-preview{max-width:288px;margin:24px auto}.atelier-list{margin:24px 0}.atelier-row{border-bottom:1px solid var(--line);padding:16px 0}.atelier-select{width:100%;display:flex;justify-content:space-between;align-items:center;padding:12px 0;text-align:left;gap:16px}.atelier-select strong{overflow-wrap:anywhere}.atelier-actions{display:flex;flex-wrap:wrap;gap:16px}.atelier-actions button{font-size:12px;padding:12px 0}.invite-code{padding:24px 0;display:flex;flex-direction:column;gap:12px;font-family:monospace}.invite-code strong{font-size:28px;letter-spacing:.18em}.members{flex-wrap:wrap}.join-preview{padding:24px;background:var(--sunken);margin:24px 0}
+
+/* Expo's reset disables body scrolling for native ScrollView. This demo uses
+   regular DOM sections, so the document must own vertical scrolling. */
+html,body{height:auto!important;min-height:100%;overflow-x:hidden;overflow-y:auto!important}
+#root{height:auto!important;min-height:100dvh;display:block!important;overflow:visible}
+.app{min-height:100dvh;padding-bottom:calc(112px + env(safe-area-inset-bottom))}
+.shared-note{margin:16px 0;color:var(--ink2);font-size:13px}
+.shared-error{color:#a32d2d;margin:16px 0;font-size:13px}
+.shared-archive{margin-top:32px}
+.shared-art{image-rendering:pixelated;width:100%;aspect-ratio:1}
+.shared-actions{display:flex;flex-direction:column;gap:16px;margin:24px 0}
+.dialog{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+@media(max-width:480px){.app{padding-bottom:calc(104px + env(safe-area-inset-bottom))}}

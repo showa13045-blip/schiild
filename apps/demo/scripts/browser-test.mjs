@@ -8,7 +8,7 @@ await mkdir('test-results',{recursive:true});
 async function panel(){await page.getByRole('button',{name:'Schiild',exact:true}).click({clickCount:3});await page.getByRole('dialog').waitFor();}
 try{
  await page.goto('http://localhost:8085');await page.getByTestId('today-board').waitFor();
- await page.getByRole('button',{name:'アーカイブ',exact:true}).click();assert.equal(await page.locator('.archive-grid button').count(),30);await page.screenshot({path:'test-results/archive.png',fullPage:true,animations:'disabled'});
+ await page.getByRole('button',{name:'アーカイブ',exact:true}).click();assert.equal(await page.locator('.archive-grid button').count(),30);await page.mouse.wheel(0,3000);await page.waitForFunction(()=>window.scrollY>0);await page.screenshot({path:'test-results/archive.png',fullPage:true,animations:'disabled'});
  await page.getByRole('button',{name:'アトリエ',exact:true}).click();await page.screenshot({path:'test-results/home.png',fullPage:true,animations:'disabled'});
  await page.getByRole('button',{name:'1日に1枚だけ',exact:true}).click();await page.getByRole('button',{name:'次へ',exact:true}).click();await page.locator('.shutter:not([disabled])').waitFor();await page.locator('.shutter').click();await page.getByText('今日のシールは一度きりです',{exact:true}).waitFor();
  await page.screenshot({path:'test-results/confirm.png',fullPage:true,animations:'disabled'});await page.getByRole('button',{name:'確定する',exact:true}).click();await page.locator('.posted').waitFor();await page.reload();await page.locator('.posted').waitFor();

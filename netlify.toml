@@ -1,3 +1,4 @@
+# This configuration belongs to the demo branch and its existing Netlify site.
 [build]
   command = "pnpm --filter demo build:web"
   publish = "apps/demo/dist"
@@ -6,3 +7,6 @@
   directory = "apps/demo/netlify/functions"
   node_bundler = "esbuild"
   external_node_modules = ["sharp"]
+
+[build.environment]
+  NODE_VERSION = "24"
