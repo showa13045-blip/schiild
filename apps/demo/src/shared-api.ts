@@ -12,7 +12,9 @@ export function credential(){
  }return value;
 }
 export async function sharedRequest<T=SharedState>(action:string,values:Record<string,unknown>={},signal?:AbortSignal):Promise<T>{
- const response=await fetch('/.netlify/functions/atelier',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${credential()}`},body:JSON.stringify({action,...values}),signal});
+ // Public API URL only. Secrets are never part of Expo's public environment.
+ const endpoint=process.env.EXPO_PUBLIC_DEMO_API_URL||'/.netlify/functions/atelier';
+ const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${credential()}`},body:JSON.stringify({action,...values}),signal});
  let body;try{body=await response.json();}catch{throw Error(t('demo.shared.unavailable'));}
  if(!response.ok){
   const key=body.error;

@@ -1,6 +1,8 @@
 # Schiild デモ — 友達とつくるシールト
 
-アトリエを作成して友達を招待し、それぞれのカメラで撮った写真から同じシールトを生成できます。共有アトリエの写真・参加状況・作品は、Netlify FunctionsとNetlify Blobsに保存します。スマホではページ全体を縦にスクロールできます。
+アトリエを作成して友達を招待し、それぞれのカメラで撮った写真から同じシールトを生成できます。公開先は `https://schiild.pickleballnavi.jp/`。Xserverには静的UIと画像だけを置き、Cloudflare WorkersとSQLite Durable Objectで共有API・参加状況・生成・抽選を処理します。スマホではページ全体を縦にスクロールできます。
+
+`demo`ブランチ専用です。本番のM1〜M4、API、DB、Rust/WASMには接続しません。TypeScript生成エンジンと暫定32色は、このデモだけで使います。
 
 ## 友達との使い方
 
@@ -19,7 +21,43 @@
 
 このアトリエで「コードを共有する」を押すと、同じ名前・定員の共有アトリエを新しく作成します。共有アトリエには、新しい招待コードが発行されます。古い端末内デモの写真やダミー履歴は共有しません。
 
-## Netlifyへの反映
+## XserverとCloudflareへの反映
+
+Cloudflare APIトークンは対象アカウントのWorkers編集権限に限定することを推奨します。Global API Keyを使う場合は登録メールアドレスも必要です。Windowsでは `LocalApiKeys/cloudflare` と `LocalApiKeys/xserver` に保存し、実行する子プロセスにだけ渡します。キーをチャット・Git・公開環境変数へ保存しません。
+
+1. Xserverで `schiild.pickleballnavi.jp` と独自SSLを用意し、SSH公開鍵を登録します。SSHのホスト鍵を確認・記録してください。証明書検証やホスト鍵検証は無効化しません。
+2. `apps/demo/scripts/configure-xserver.ps1` をPC上で実行します。画像ディレクトリは `/home/<server-id>/schiild-demo-images` のように、すべての `public_html` の外にします。設定と共有署名キーはアクセスを制限した `.deploy-private/` に保存されます。既存の署名キーを作り直さないでください。
+3. 対象アカウントを `CLOUDFLARE_ACCOUNT_ID` に設定し、次を実行します。有料プランへの切り替えは不要です。利用量の上限に達すると制限されます。
+
+```sh
+pnpm install --frozen-lockfile
+pnpm --filter demo exec wrangler deploy
+```
+
+4. `.deploy-private/storage-secret.txt` の値を、チャット外の伏せ字入力または標準入力でWorkerの `XSERVER_STORAGE_SECRET` に登録します。コマンドの引数に秘密の値を含めません。
+
+```sh
+pnpm --filter demo exec wrangler secret put XSERVER_STORAGE_SECRET
+```
+
+5. デプロイ結果のWorker URLに `/api/atelier` を付け、公開用環境変数を設定してUIを書き出します。以下はPowerShellの例です。この変数はAPIのURLのみで、秘密情報を含みません。
+
+```powershell
+$env:EXPO_PUBLIC_DEMO_API_URL = 'https://schiild-demo-api.black-field-ae8f.workers.dev/api/atelier'
+node apps/demo/scripts/prepare-xserver.mjs
+& apps/demo/scripts/deploy-xserver.ps1 -CheckOnly
+& apps/demo/scripts/deploy-xserver.ps1
+```
+
+アップロード先は設定したサブドメインのdocument rootだけです。画像用PHPはHMAC署名したGET/PUTだけを受け付け、同じキーの画像を上書きしません。認証・アトリエ・抽選・生成の処理やDBをXserverに置きません。署名キーと非公開画像を静的UIに含めません。
+
+配置後は、HTTPS、署名なしの画像アクセス拒否、異なるブラウザでの招待・写真投稿・同じ作品の開封・再読み込みを確認してください。Worker側のCORSは `wrangler.jsonc` の `ALLOWED_ORIGINS` に記載したUIだけを許可します。
+
+## 以前のNetlify版
+
+`https://schiildmoc.netlify.app/` は、移行確認中も既存のFunctions・Blobsで動作します。下記は旧サイトを維持する場合の手順です。Cloudflare版の画像はXserverに保存し、Netlify Blobsへは保存しません。
+
+Netlifyの既存データは自動移行しません。旧サイトの共有アトリエ・写真・作品・ブラウザの識別情報を残しています。新しいドメインではブラウザの保存領域が別になるため、同じブラウザでも別の参加者として開始します。旧サイトの招待コードは新しいAPIでは使えません。データ移行と本人の引き継ぎは、別途確認して実施する必要があります。
 
 共有機能を使うには、静的ファイルとFunctionsを一緒に配置します。`dist/`を手動でアップロードするだけでは、共有APIが配置されません。
 
@@ -54,6 +92,7 @@ pnpm test
 pnpm --filter demo typecheck
 pnpm --filter demo test
 pnpm --filter demo build:web
+pnpm test:rust
 ```
 
 ローカルの共有体験は、書き出し後に`node apps/demo/scripts/serve.mjs`で確認できます。開いたURLは`http://localhost:8085/`です。この確認用サーバーのデータはメモリ内にあり、再起動すると消えます。
@@ -64,7 +103,7 @@ pnpm --filter demo build:web
 
 ## 保存とアクセス
 
-ブラウザ内で生成した秘密の識別情報で、そのブラウザの参加を確認します。その値は招待リンクに含めません。共有APIは参加者だけに作品を返し、生成操作は作成者だけに許可します。Netlify Blobsの強整合性と条件付き書き込みで、同時参加・同時投稿によるデータの上書きを防ぎます。
+ブラウザ内で生成した秘密の識別情報で、そのブラウザの参加を確認します。その値は招待リンクに含めません。共有APIは参加者だけに作品を返し、生成操作は作成者だけに許可します。Cloudflare版はDurable ObjectのSQLiteトランザクションと条件付き更新で、同時参加・同時投稿による上書きを防ぎます。SQLiteに画像バイナリを格納しません。
 
 カメラ写真は1080×1080のJPEGとして検証し、メタデータを除いて保存します。元の写真を参加者へ配信するAPIはなく、生成したシールトを共有します。送信に失敗した場合は、確認画面に写真を保持して再試行できます。
 
@@ -75,3 +114,5 @@ pnpm --filter demo build:web
 [ASSUMPTION / ユーザー指示に基づく変更] 友達との共同制作をその場で体験するため、共有アトリエは当日参加と作成者による即時生成を採用します。元の要件の翌日参加・日次バッチは、本番側の仕様として残します。
 
 共有版でも、作品の生成にはデモ用TypeScriptエンジンと暫定32色パレットを使います。本番Rust/WASMへの接続、プッシュ通知、公平性を外部から検証できる抽選、GLOBAL集計は今回の対象に含めません。共有アトリエにはダミーの参加者・写真・作品を追加しません。
+
+Cloudflare画像コーデック・Xserver署名ゲートウェイ・SQLite・CORSを自動テストします。実際のPHPとworkerdを使う追加テストは `DEMO_PHP` と `DEMO_WORKER_BUNDLE` を設定して `pnpm --filter demo test` を実行します。未設定の場合、この2件はスキップとして報告されます。実機カメラの許可ダイアログ、実端末の撮影品質、一斉配信・通知は自動テストで再現しません。

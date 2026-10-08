@@ -3,7 +3,7 @@ import productCopy from './scripts/eslint/product-copy.mjs';
 import domainNames from './scripts/eslint/domain-names.mjs';
 
 export default [
-  { ignores: ['**/node_modules/**', '**/dist/**', '**/.expo/**', '**/.expo-home/**', '**/target/**'] },
+  { ignores: ['**/node_modules/**', '**/dist/**', '**/.expo/**', '**/.expo-home/**', '**/.wrangler/**', '**/.deploy-private/**', '**/target/**'] },
   {
     files: ['apps/**/*.{js,jsx,mjs,ts,tsx}', 'packages/**/*.{js,jsx,mjs,ts,tsx,mts}'],
     languageOptions: { parser: tseslint.parser, parserOptions: { ecmaFeatures: { jsx: true } } },

@@ -11,3 +11,8 @@ target/
 .env.*
 !.env.example
 
+.wrangler/
+.dev.vars
+.dev.vars.*
+.deploy-private/
+

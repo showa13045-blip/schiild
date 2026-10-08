@@ -6,7 +6,7 @@ import {ApiError,createAtelierService} from '../server/atelier-service.mjs';
 import {memoryStore} from '../server/memory-store.mjs';
 const root=path.resolve(fileURLToPath(new URL('../dist/',import.meta.url))),types={'.html':'text/html; charset=utf-8','.js':'application/javascript','.css':'text/css','.png':'image/png','.ttf':'font/ttf','.woff2':'font/woff2','.json':'application/json'};
 const service=createAtelierService(memoryStore());
-// All local servers below share the same test store. Production uses Netlify.
+// Local test servers share an in-memory store. Public demo uses Cloudflare/Xserver.
 function createServer(port){http.createServer(async(req,res)=>{
  try{
   const url=new URL(req.url,`http://localhost:${port}`);

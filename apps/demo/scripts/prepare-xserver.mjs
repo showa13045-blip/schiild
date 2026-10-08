@@ -1,0 +1,17 @@
+import {spawnSync} from 'node:child_process';
+import {cp,mkdir,writeFile} from 'node:fs/promises';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+const root=fileURLToPath(new URL('../',import.meta.url));
+const endpoint=new URL(process.env.EXPO_PUBLIC_DEMO_API_URL??'');
+if(endpoint.protocol!=='https:'||endpoint.pathname!=='/api/atelier')throw Error('Set EXPO_PUBLIC_DEMO_API_URL to your HTTPS Worker /api/atelier URL');
+const sync=spawnSync(process.execPath,['scripts/sync-copy.mjs'],{cwd:root,stdio:'inherit',windowsHide:true});
+if(sync.status!==0)process.exit(sync.status??1);
+const build=spawnSync(process.execPath,['scripts/expo.mjs','export','--platform','web'],{cwd:root,env:{...process.env,EXPO_PUBLIC_DEMO_API_URL:endpoint.href},stdio:'inherit',windowsHide:true});
+if(build.status!==0)process.exit(build.status??1);
+const dest=path.join(root,'.wrangler/xserver-site');
+await mkdir(dest,{recursive:true});
+await cp(path.join(root,'dist'),dest,{recursive:true});
+for(const file of ['storage.php','.htaccess'])await cp(path.join(root,'xserver',file),path.join(dest,file));
+await writeFile(path.join(dest,'deployment.json'),JSON.stringify({api:endpoint.href,ui:'https://schiild.pickleballnavi.jp',builtAt:new Date().toISOString()})+'\n');
+console.log(`Xserver upload bundle: ${dest}`);
