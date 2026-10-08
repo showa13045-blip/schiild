@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test scripts/*.test.mjs",
     "build:web": "node scripts/sync-copy.mjs && node scripts/expo.mjs export --platform web --clear",
-    "test:browser": "node scripts/browser-test.mjs && node scripts/ateliers-browser.mjs && node scripts/accounts-global-browser.mjs && node scripts/leave-browser.mjs && node scripts/camera-browser.mjs && node scripts/draft-browser.mjs"
+    "test:browser": "node scripts/browser-test.mjs && node scripts/ateliers-browser.mjs && node scripts/accounts-global-browser.mjs && node scripts/leave-browser.mjs && node scripts/camera-browser.mjs && node scripts/draft-browser.mjs && node scripts/google-browser.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
@@ -18,6 +18,7 @@
     "@netlify/blobs": "^11.1.3",
     "expo": "~57.0.20",
     "expo-font": "~57.0.3",
+    "jose": "^6.2.12",
     "jpeg-js": "0.4.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",

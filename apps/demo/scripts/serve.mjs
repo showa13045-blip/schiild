@@ -6,7 +6,7 @@ import {ApiError,createAtelierService} from '../server/atelier-service.mjs';
 import {memoryStore} from '../server/memory-store.mjs';
 import {accounts} from '../server/accounts.mjs';
 const root=path.resolve(fileURLToPath(new URL('../dist/',import.meta.url))),types={'.html':'text/html; charset=utf-8','.js':'application/javascript','.css':'text/css','.png':'image/png','.ttf':'font/ttf','.woff2':'font/woff2','.json':'application/json'};
-const store=memoryStore(),auth=accounts(store);
+const store=memoryStore(),auth=accounts(store,{googleClientId:process.env.GOOGLE_CLIENT_ID});
 const service=createAtelierService(store);
 // Local test servers share an in-memory store. Public demo uses Cloudflare/Xserver.
 function createServer(port){http.createServer(async(req,res)=>{

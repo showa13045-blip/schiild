@@ -153,3 +153,22 @@ Cloudflare画像コーデック・Xserver署名ゲートウェイ・SQLite・COR
 共通の下部ナビゲーションはアトリエ選択・コード共有・アカウント・設定でも表示します。「アーカイブ」から日付ごとのGLOBALを選べます。設定の「開封・ズームの演出を省略する」はこのブラウザに保存されます。通知は未対応と表示します。Xserverは静的UIと署名付き画像保存のみ、認証と共有処理はCloudflare内です。
 
 旧Netlifyサイトには今回のログイン機能を反映しません。新しいUIを利用する配置先はCloudflare APIを設定したXserver版です。
+
+## Googleアカウントでの認証（デモ専用）
+
+[ASSUMPTION / ユーザーのGmail認証依頼に基づく変更] Google Identity Servicesの公式ボタンからGoogleアカウントを選んでログインします。新規登録はそのブラウザの共有参加情報を引き継ぎます。既存IDのアカウントに連携する場合は、先にID・パスワードでログインし、アカウントページのGoogleボタンを押します。メールアドレスの一致による自動統合は行いません。連携済みなら別端末でもGoogleで同じアカウントへ戻れます。端末内のサンプル履歴は移行しません。
+
+Google側での設定が完了するまで、Googleボタンは表示しません。設定手順は次のとおりです。
+
+1. Google CloudのGoogle Auth Platformでプロジェクトを作成または選択し、ブランディング、サポートメール、対象「外部」を設定します。
+2. WebアプリケーションのOAuthクライアントを作成します。承認済みJavaScript生成元は `https://schiild.pickleballnavi.jp` です。ポップアップのJavaScriptコールバックを使うため、リダイレクトURIは不要です。
+3. 基本の `openid / email / profile` のみを使います。Gmail APIやメール本文を読む権限は要求しません。テスト中はGoogle側でテストユーザーを指定します。一般利用者へ公開する場合はGoogle側の公開状態と表示される確認事項を確認してください。
+4. ホームページは `https://schiild.pickleballnavi.jp/`、プライバシー情報は `https://schiild.pickleballnavi.jp/privacy.html` です。運用内容に合うことを確認し、承認済みドメイン `pickleballnavi.jp` と一緒にGoogleへ登録します。
+5. `node apps/demo/scripts/configure-google.mjs` を実行し、`http://127.0.0.1:8799/` にWeb用クライアントIDを入力します。Git対象外の `apps/demo/.deploy-private/google-auth.json` へ保存します。クライアントシークレットやGoogleパスワードは不要です。
+6. 同じクライアントIDをCloudflare Workerの `GOOGLE_CLIENT_ID` に設定し、WorkerとUIを配置します。CLIでは `pnpm --filter demo exec wrangler secret put GOOGLE_CLIENT_ID` の対話入力を使えます。このIDは公開識別子ですが、認証を有効化する対象をローカル設定に限定します。UIはAPIからIDを取得するので、Google設定だけの変更でUIを再ビルドする必要はありません。
+
+ローカル動作をGoogleでも確認する場合は、Googleの承認済み生成元に `http://localhost` と `http://localhost:8085` を追加し、確認用サーバーの `GOOGLE_CLIENT_ID` 環境変数へ同じIDを渡します。鍵やGoogle認証トークンをチャット、コミット、静的ファイルへ貼り付けないでください。
+
+Cloudflareでは `jose` とGoogleの公開鍵を使い、RS256署名、発行者、クライアントID、発行・失効時刻、確認済みメール、nonceを検証します。Googleの `sub` をSHA-256で識別し、Google IDトークンは保存しません。5分間有効のnonceはブラウザの認証情報に結び付け、条件付き更新で一度だけ受け付けます。Googleアカウントと参加者の連携はSQLiteトランザクションで確定します。ログイン後は既存の7日間セッション、ログアウト失効、IPごとの認証操作制限を適用します。ID・パスワードの認証も継続して利用できます。
+
+`google-auth.test.mjs` は署名偽造、別アプリのトークン、失効、nonceの取り違え・再利用、同時登録、既存IDとの連携、メール一致による誤統合の防止を検証します。`google-browser.mjs` はGoogleサービスだけを模擬し、署名済みトークンを実際のアカウント処理へ渡してボタン、再試行、ログアウト、別端末の復元を確認します。追加のworkerd/PHPテストではGoogle公開鍵の応答だけを模擬し、Cloudflare実行環境の署名検証とSQLite連携まで確認します。実際のGoogleアカウントの選択・同意は、Google側設定後に本人がブラウザで確認する必要があります。

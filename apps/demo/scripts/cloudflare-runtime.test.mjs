@@ -8,18 +8,22 @@ import path from 'node:path';
 import os from 'node:os';
 import {pathToFileURL} from 'node:url';
 import sharp from 'sharp';
+import {generateKeyPair,exportJWK,SignJWT} from 'jose';
 const bundle=process.env.DEMO_WORKER_BUNDLE,php=process.env.DEMO_PHP;
 test('workerd and durable SQLite run complete shared generation against the actual PHP gateway',{skip:!bundle||!php},async()=>{
  const require=createRequire(import.meta.url),wranglerRequire=createRequire(realpathSync(require.resolve('wrangler/package.json')));
  const {Miniflare,convertV4MiniflareOptions}=await import(pathToFileURL(wranglerRequire.resolve('miniflare')).href);
  const root=await mkdtemp(path.join(os.tmpdir(),'schiild-runtime-')),site=path.join(root,'site'),directory=path.join(root,'images'),secret='f'.repeat(64);
+ const googleClient='123456789-runtime.apps.googleusercontent.com',{privateKey,publicKey}=await generateKeyPair('RS256'),googleJwk=await exportJWK(publicKey);googleJwk.kid='runtime';
  await mkdir(site);await mkdir(directory);await cp(new URL('../xserver/storage.php',import.meta.url),path.join(site,'storage.php'));
  await writeFile(path.join(site,'.storage-config.php'),`<?php return ['secret'=>'${secret}','directory'=>'${directory.replaceAll('\\','/')}'];`);
  const child=spawn(php,['-S','127.0.0.1:8793','-t',site],{windowsHide:true,stdio:'ignore'});let mf;
  try{
   for(let n=0;n<50;n++){try{await fetch('http://127.0.0.1:8793/storage.php');break;}catch{await new Promise(r=>setTimeout(r,100));}}
-  mf=new Miniflare(convertV4MiniflareOptions({name:'test',scriptPath:bundle,modules:true,compatibilityDate:'2026-10-08',compatibilityFlags:['nodejs_compat'],durableObjects:{ATELIERS:{className:'AtelierDirectory',useSQLite:true}},bindings:{ALLOWED_ORIGINS:'http://localhost:8085',XSERVER_STORAGE_URL:'https://schiild.pickleballnavi.jp/storage.php',XSERVER_STORAGE_SECRET:secret},outboundService:async request=>{
-   const url=new URL(request.url);assert.equal(url.hostname,'schiild.pickleballnavi.jp');url.protocol='http:';url.hostname='127.0.0.1';url.port='8793';
+  mf=new Miniflare(convertV4MiniflareOptions({name:'test',scriptPath:bundle,modules:true,compatibilityDate:'2026-10-08',compatibilityFlags:['nodejs_compat'],durableObjects:{ATELIERS:{className:'AtelierDirectory',useSQLite:true}},bindings:{ALLOWED_ORIGINS:'http://localhost:8085',XSERVER_STORAGE_URL:'https://schiild.pickleballnavi.jp/storage.php',XSERVER_STORAGE_SECRET:secret,GOOGLE_CLIENT_ID:googleClient},outboundService:async request=>{
+   const url=new URL(request.url);
+   if(url.href==='https://www.googleapis.com/oauth2/v3/certs')return Response.json({keys:[googleJwk]},{headers:{'Cache-Control':'public, max-age=3600'}});
+   assert.equal(url.hostname,'schiild.pickleballnavi.jp');url.protocol='http:';url.hostname='127.0.0.1';url.port='8793';
    const response=await fetch(url,{method:request.method,headers:Object.fromEntries(request.headers),...(request.method==='PUT'?{body:await request.arrayBuffer()}:{})});
    return response;
   }}));
@@ -41,6 +45,13 @@ test('workerd and durable SQLite run complete shared generation against the actu
   const account=await call('account.register',{username:'runtime_member',password:'runtime-password-29',name:'あさ'},first);
   assert.equal(account.account.ateliers[0].code,room.code);assert.equal(account.account.ateliers[0].canGenerate,true);
   const login=await call('account.login',{username:'runtime_member',password:'runtime-password-29'},'c'.repeat(64));
+  const start=await call('account.google.start',{},login.token);
+  const idToken=await new SignJWT({nonce:start.nonce,email:'runtime@gmail.com',email_verified:true}).setProtectedHeader({alg:'RS256',kid:'runtime'}).setSubject('runtime-google-person').setIssuer('https://accounts.google.com').setAudience(googleClient).setIssuedAt().setExpirationTime('5m').sign(privateKey);
+  const linked=await call('account.google',{idToken},login.token);assert.equal(linked.account.username,'runtime_member');assert.equal(linked.account.ateliers[0].code,room.code);
+  const replay=await mf.dispatchFetch('https://api.example/api/atelier',{method:'POST',headers:{Authorization:`Bearer ${login.token}`},body:JSON.stringify({action:'account.google',idToken})});assert.equal(replay.status,401);
+  const outside='4'.repeat(64),again=await call('account.google.start',{},outside);
+  const returningToken=await new SignJWT({nonce:again.nonce,email:'runtime@gmail.com',email_verified:true}).setProtectedHeader({alg:'RS256',kid:'runtime'}).setSubject('runtime-google-person').setIssuer('https://accounts.google.com').setAudience(googleClient).setIssuedAt().setExpirationTime('5m').sign(privateKey);
+  const returning=await call('account.google',{idToken:returningToken},outside);assert.equal(returning.account.username,'runtime_member');assert.equal((await call('state',{code:room.code},returning.token)).canGenerate,true);
   assert.equal((await call('state',{code:room.code},login.token)).canGenerate,true);assert.equal((await call('global',{day:room.day},login.token)).x,global.x);
   await call('leave',{code:room.code},login.token);
   assert.equal((await call('account.me',{},login.token)).account.ateliers.length,0);

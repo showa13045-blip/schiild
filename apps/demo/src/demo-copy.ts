@@ -2,6 +2,14 @@
 export const demoCopy={
  // User-selected label override for the demo's GLOBAL statistics.
  'global.stat.posts':'総投稿数',
+ 'demo.google.title':'Googleアカウントでログイン・連携',
+ 'demo.google.note':'初めての登録では、このブラウザの参加情報を引き継ぎます。既存のIDのアカウントに連携する場合は、先にIDとパスワードでログインしてください。',
+ 'demo.google.linked':'Googleアカウントと連携しています',
+ 'demo.google.unavailable':'Googleログインを読み込めませんでした。通信を確認し、Safari・Chrome・Edgeで開き直してください。',
+ 'demo.google.invalid':'Googleの認証を確認できませんでした。もう一度ログインしてください。',
+ 'demo.google.expired':'認証の受付時間が過ぎました。もう一度ログインしてください。',
+ 'demo.google.conflict':'このGoogleアカウントまたは参加情報は、別のアカウントに連携しています。ログアウトして、連携済みの方法でログインしてください。',
+ 'demo.google.retry':'Googleログインを再読み込みする',
  'demo.draft.generate':'今日のシールトを仮生成する',
  'demo.draft.loading':'仮生成しています',
  'demo.draft.label':'デモ専用・仮表示',
@@ -78,7 +86,7 @@ export const demoCopy={
  'demo.account.register':'アカウントをつくる',
  'demo.account.rules':'IDは英小文字・数字・_・-で3〜24文字。パスワードは12〜128文字です。',
  'demo.account.scope':'ログインすると、別の端末でも参加アトリエと預かり作品を確認できます。ひとりで試す履歴は、このブラウザにだけ残ります。',
- 'demo.account.recovery':'メール確認とパスワードの再発行は、このデモではできません。',
+ 'demo.account.recovery':'ID・パスワード方式では、メール確認とパスワードの再発行はできません。',
  'demo.account.invalid':'ID、表示名、パスワードの入力内容を確認してください。',
  'demo.account.taken':'このIDでは登録できません。別のIDを入力してください。',
  'demo.account.linked':'このブラウザの参加情報は、すでにアカウントに連携しています。ログインしてください。',

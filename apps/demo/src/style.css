@@ -29,3 +29,5 @@ html,body{height:auto!important;min-height:100%;overflow-x:hidden;overflow-y:aut
 .account-page form{margin:24px 0}.account-page h2,.settings-page h2{margin:32px 0 16px}.account-page .atelier-select,.settings-page .atelier-select{min-height:56px;border-bottom:1px solid var(--line)}.account-page .choice [aria-pressed=true]{border-color:var(--ink);background:var(--sunken)}.setting-toggle{display:flex;align-items:center;justify-content:space-between;gap:24px;margin:32px 0;font-size:14px;line-height:1.8}.setting-toggle input{width:24px;height:24px;flex-shrink:0;accent-color:var(--ink)}
 .motion-reduced *{transition-duration:0ms!important;transition-delay:0ms!important;animation:none!important}
 @media(max-width:480px){.app{padding-bottom:calc(104px + env(safe-area-inset-bottom))}}
+
+.google-auth{margin:24px 0;padding:24px 0;border-top:1px solid var(--line)}.google-email{overflow-wrap:anywhere;font-size:14px}.google-auth [data-testid=google-sign-in]{min-height:44px;max-width:100%}

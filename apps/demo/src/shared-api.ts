@@ -5,7 +5,7 @@ export type SharedState={code:string;name:string;capacity:number;members:number;
 export type SharedPreview={code:string;name:string;capacity:number;members:number;total:number;online:true};
 const credentialKey='schiild.shared.credential.v1';
 const sessionKey='schiild.account.session.v1';
-export type Account={username:string;name:string;since:string;ateliers:{code:string;name:string;capacity:number;canGenerate:boolean}[];custody:{code:string;name:string;day:string;index:number}[]};
+export type Account={username:string;name:string;since:string;googleEmail?:string;ateliers:{code:string;name:string;capacity:number;canGenerate:boolean}[];custody:{code:string;name:string;day:string;index:number}[]};
 export function saveSession(token:string){if(!/^[a-f0-9]{64}$/.test(token))throw Error('invalid_session');localStorage.setItem(sessionKey,token);}
 export function clearSession(){localStorage.removeItem(sessionKey);localStorage.removeItem(credentialKey);}
 export class SharedError extends Error{constructor(public code:string,message:string){super(message);}}
@@ -24,7 +24,7 @@ export async function sharedRequest<T=SharedState>(action:string,values:Record<s
  let body;try{body=await response.json();}catch{throw Error(t('demo.shared.unavailable'));}
  if(!response.ok){
   const key=body.error;
-  const accountErrors={account_invalid:'demo.account.invalid',account_taken:'demo.account.taken',account_linked:'demo.account.linked',login_invalid:'demo.account.login_invalid',login_limited:'demo.account.limited',session_expired:'demo.account.expired',unauthorized:'demo.account.expired',slots_reserved:'demo.atelier.slots_reserved'} as const;
+  const accountErrors={account_invalid:'demo.account.invalid',account_taken:'demo.account.taken',account_linked:'demo.account.linked',login_invalid:'demo.account.login_invalid',login_limited:'demo.account.limited',session_expired:'demo.account.expired',unauthorized:'demo.account.expired',slots_reserved:'demo.atelier.slots_reserved',google_invalid:'demo.google.invalid',google_expired:'demo.google.expired',google_conflict:'demo.google.conflict',google_unavailable:'demo.google.unavailable'} as const;
   throw new SharedError(key,key in accountErrors?t(accountErrors[key as keyof typeof accountErrors]):key==='not_found'?t('join.error.not_found'):key==='full'?t('join.error.full'):key==='window_closed'?t('error.window_closed'):key==='image_invalid'?t('demo.shared.image_invalid'):key==='no_photos'?t('demo.shared.no_photos'):key==='forbidden'?t('demo.shared.forbidden'):action==='draft'?t('demo.draft.failed'):t('demo.shared.unavailable'));
  }return body as T;
 }

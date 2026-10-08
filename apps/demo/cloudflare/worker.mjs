@@ -16,10 +16,10 @@ export class AtelierDirectory extends DurableObject {
    let body;try{body=await request.json();}catch{throw new ApiError(400,'invalid');}
    if(!body||typeof body!=='object'||Array.isArray(body))throw new ApiError(400,'invalid');
    const images=xserverImages({url:this.env.XSERVER_STORAGE_URL,secret:this.env.XSERVER_STORAGE_SECRET});
-   const store=metadataStore(this.storage,images),auth=accounts(store),credential=request.headers.get('authorization')?.replace(/^Bearer /,'');
+   const store=metadataStore(this.storage,images),auth=accounts(store,{googleClientId:this.env.GOOGLE_CLIENT_ID}),credential=request.headers.get('authorization')?.replace(/^Bearer /,'');
    let result;
    if(typeof body.action==='string'&&body.action.startsWith('account.')){
-    if(['account.login','account.register'].includes(body.action)&&this.env.AUTH_RATE_LIMITER&&!((await this.env.AUTH_RATE_LIMITER.limit({key:request.headers.get('X-Demo-IP')??'local'})).success))throw new ApiError(429,'login_limited');
+    if(['account.login','account.register','account.google','account.google.start'].includes(body.action)&&this.env.AUTH_RATE_LIMITER&&!((await this.env.AUTH_RATE_LIMITER.limit({key:request.headers.get('X-Demo-IP')??'local'})).success))throw new ApiError(429,'login_limited');
     result=await auth.execute(body,credential);
    }else{
     const actor=await auth.identity(credential);
