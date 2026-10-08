@@ -20,6 +20,14 @@
 
 生成後は、その日の写真を追加できません。翌日の受付はUTC 00:00（JST 09:00）に始まります。同じブラウザで同じ日に記録した写真は、複数のアトリエでも同じ画像を使います。写真の差し替えはできません。
 
+## カメラが使えないとき
+
+撮影画面の「許可の手順を見る」から、iPhone・iPad / Safari、Android / Chrome、PC / Chrome・Edge、その他のブラウザの手順を選べます。サイトの許可と端末側の許可を見直してから、同じ画面の「カメラを再確認する」で撮影を再開します。プレビューやアプリ内ブラウザで利用できない場合は、画面に表示したURLを通常のブラウザで開きます。権限拒否・カメラ未検出・起動失敗・非対応・安全な接続でない場合を区別します。撮影を離れた後に許可しても、そのリクエストのカメラは停止します。
+
+[ASSUMPTION / デモ用文言] ユーザーが依頼したカメラ復旧導線として、Webブラウザの許可手順と失敗原因の案内を `demo.camera.*` に追加します。正式な権限説明と拒否見出しは `docs/copy.md` をそのまま使用します。WebページからOSやサイトの許可を変更するボタンにはせず、端末側での変更手順と再試行を提供します。
+
+手順の参照元: [Chrome（Android）](https://support.google.com/chrome/answer/2693767?hl=ja&co=GENIE.Platform%3DAndroid)、[Safari（iPad）](https://support.apple.com/ja-jp/guide/ipad/ipad8ea0fc1a/ipados)、[Firefox](https://support.mozilla.org/en-US/kb/how-manage-your-camera-and-microphone-permissions)、[Windows](https://support.microsoft.com/en-us/windows/privacy/manage-app-permissions-for-a-camera-in-windows)。自動テストは擬似カメラと権限エラーを使用します。実機のOS設定の変更やカメラの物理的な故障は自動操作で検証できません。
+
 ## 既存の端末内デモ
 
 初期の「あさ」と、以前に端末内で作成したアトリエは、そのまま残ります。一覧では「ひとりで試す」と表示します。ここには従来のダミー履歴と、ヘッダー右側の日付の3回タップで開く進行役パネルがあります。

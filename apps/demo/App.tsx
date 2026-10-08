@@ -7,6 +7,9 @@ import './src/style.css';
 import type {Atelier} from './src/ateliers';
 import type {Navigation} from './src/DemoNav';
 import {preferences} from './src/preferences';
+import CameraHelp from './src/CameraHelp';
+import {cameraProblem} from './src/camera-recovery';
+import type {CameraProblem} from './src/camera-recovery';
 export {default} from './src/AtelierApp';
 
 
@@ -19,13 +22,33 @@ function Button({children,onClick,secondary=false,disabled=false}:{children:Reac
 export function Camera({day,atelier,onBack,onSubmit,shared=false}:{day:string;atelier:string;onBack:()=>void;onSubmit:(url:string)=>void|Promise<void>;shared?:boolean}){
  const video=useRef<HTMLVideoElement>(null),stream=useRef<MediaStream|null>(null);
  const [status,setStatus]=useState<'idle'|'loading'|'ready'|'denied'>('idle'),[preview,setPreview]=useState<string|null>(null),[failed,setFailed]=useState(false),[sending,setSending]=useState(false),[sendError,setSendError]=useState('');
- const submitLock=useRef(false);
+ const submitLock=useRef(false),attempt=useRef(0),startLock=useRef(false);
+ const [problem,setProblem]=useState<CameraProblem>('permission'),[help,setHelp]=useState(false);
  async function submit(){if(!preview||submitLock.current)return;submitLock.current=true;setSending(true);setSendError('');try{await onSubmit(preview);}catch(error){setSendError(error instanceof Error?error.message:t('error.upload_failed'));}finally{submitLock.current=false;setSending(false);}}
- useEffect(()=>()=>{stream.current?.getTracks().forEach(track=>track.stop());},[]);
- async function start(){setStatus('loading');setFailed(false);try{if(!navigator.mediaDevices?.getUserMedia)throw Error('camera_unavailable');const media=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1080},height:{ideal:1080}},audio:false});stream.current=media;if(!video.current){media.getTracks().forEach(track=>track.stop());return;}video.current.srcObject=media;await video.current.play();setStatus('ready');}catch{setStatus('denied');}}
- function capture(){try{const source=video.current;if(!source?.videoWidth)throw Error('camera_not_ready');const canvas=document.createElement('canvas');canvas.width=1080;canvas.height=1080;const side=Math.min(source.videoWidth,source.videoHeight);canvas.getContext('2d')?.drawImage(source,(source.videoWidth-side)/2,(source.videoHeight-side)/2,side,side,0,0,1080,1080);setPreview(canvas.toDataURL('image/jpeg',.85));stream.current?.getTracks().forEach(track=>track.stop());setStatus('idle');}catch{setFailed(true);}}
+ function stop(){stream.current?.getTracks().forEach(track=>track.stop());stream.current=null;if(video.current)video.current.srcObject=null;}
+ useEffect(()=>()=>{attempt.current++;stream.current?.getTracks().forEach(track=>track.stop());},[]);
+ async function start(){
+  if(startLock.current)return;startLock.current=true;const current=++attempt.current;
+  stop();setStatus('loading');setFailed(false);
+  try{
+   if(!window.isSecureContext)throw Object.assign(new Error(),{name:'camera_insecure'});
+   if(!navigator.mediaDevices?.getUserMedia)throw Object.assign(new Error(),{name:'camera_unsupported'});
+   let media:MediaStream;
+   try{media=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1080},height:{ideal:1080}},audio:false});}
+   catch(error){if(!(error instanceof Error)||error.name!=='OverconstrainedError')throw error;media=await navigator.mediaDevices.getUserMedia({video:true,audio:false});}
+   if(current!==attempt.current||!video.current){media.getTracks().forEach(track=>track.stop());return;}
+   stream.current=media;video.current.srcObject=media;
+   media.getVideoTracks().forEach(track=>track.addEventListener('ended',()=>{if(current===attempt.current){stop();setProblem('interrupted');setStatus('denied');}},{once:true}));
+   await video.current.play();if(current===attempt.current){setStatus('ready');setHelp(false);}
+  }catch(error){if(current===attempt.current){stop();setProblem(cameraProblem(error));setStatus('denied');}}
+  finally{startLock.current=false;}
+ }
+ function showHelp(){setHelp(true);requestAnimationFrame(()=>{const panel=document.getElementById('camera-help');panel?.focus({preventScroll:true});panel?.scrollIntoView({behavior:'smooth',block:'start'});});}
+ function capture(){try{const source=video.current;if(!source?.videoWidth||!source.videoHeight)throw Error('camera_not_ready');const canvas=document.createElement('canvas');canvas.width=1080;canvas.height=1080;const side=Math.min(source.videoWidth,source.videoHeight),context=canvas.getContext('2d');if(!context)throw Error('camera_not_ready');context.drawImage(source,(source.videoWidth-side)/2,(source.videoHeight-side)/2,side,side,0,0,1080,1080);setPreview(canvas.toDataURL('image/jpeg',.85));stop();setStatus('idle');}catch{setFailed(true);}}
  return <section className="camera-page"><div className="subheader"><button className="text-button" onClick={onBack}>{t('common.back')}</button><span className="mono">{t('camera.date',{date:date(day)})}</span></div>
-  <div className="viewfinder">{preview?<img src={preview} alt={t('camera.date',{date:date(day)})}/>:<video ref={video} playsInline muted autoPlay/>}{!preview&&status!=='ready'&&<div className="permission"><Icon kind="camera"/><h2>{t(status==='denied'?'camera.permission.denied.title':'camera.permission.title')}</h2><p>{t(status==='denied'?'camera.permission.denied.body':'camera.permission.body')}</p><Button onClick={()=>void start()} disabled={status==='loading'}>{t(status==='loading'?'common.loading':status==='denied'?'common.retry':'common.next')}</Button></div>}</div>
+  <div className="viewfinder" data-camera-state={preview?'preview':status}>{preview?<img src={preview} alt={t('camera.date',{date:date(day)})}/>:<video ref={video} playsInline muted autoPlay/>}{!preview&&status!=='ready'&&<div className="permission"><Icon kind="camera"/><h2>{t(status==='denied'?'camera.permission.denied.title':'camera.permission.title')}</h2><p role={status==='denied'?'alert':undefined}>{t(status==='denied'?(problem==='permission'?'camera.permission.denied.body':`demo.camera.${problem}`):'camera.permission.body')}</p><Button onClick={()=>void start()} disabled={status==='loading'}>{t(status==='loading'?'common.loading':status==='denied'?'demo.camera.retry':'common.next')}</Button>{status==='denied'&&<Button secondary onClick={showHelp}>{t('demo.camera.help')}</Button>}</div>}</div>
+  {!preview&&help&&status!=='ready'&&<CameraHelp/>}
+  {!preview&&help&&status==='denied'&&<Button onClick={()=>{void start();document.querySelector('.camera-page')?.scrollIntoView({block:'start'});}}>{t('demo.camera.retry')}</Button>}
   {!preview&&<button className="shutter" disabled={status!=='ready'} aria-label={t('onboarding.1.title')} onClick={capture}><span/></button>}
   {failed&&<p role="alert">{t('camera.capture_failed')}</p>}
   {preview&&<div className="modal-shade"><section className="dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title"><img className="confirm-photo" src={preview} alt={t('camera.date',{date:date(day)})}/><h2 id="confirm-title">{t('camera.confirm.title')}</h2><p>{t('camera.confirm.body',{ateliers:`「${atelier}」`})}</p>{shared&&<p>{t('demo.shared.photo_notice')}</p>}{sendError&&<p className="error" role="alert">{sendError}</p>}{!shared&&<p className="mono muted">{t('camera.confirm.remaining',{date:short(day),countdown:'00:15:00'})}</p>}<Button disabled={sending} onClick={()=>void submit()}>{t(sending?'common.loading':'camera.confirm.submit')}</Button><Button secondary disabled={sending} onClick={()=>{setPreview(null);setStatus('idle');}}>{t('camera.confirm.back')}</Button></section></div>}
