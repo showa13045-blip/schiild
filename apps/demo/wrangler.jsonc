@@ -8,6 +8,6 @@
  "vars":{"ALLOWED_ORIGINS":"https://schiild.pickleballnavi.jp","XSERVER_STORAGE_URL":"https://schiild.pickleballnavi.jp/storage.php"},
  "durable_objects":{"bindings":[{"name":"ATELIERS","class_name":"AtelierDirectory"}]},
  "migrations":[{"tag":"v1","new_sqlite_classes":["AtelierDirectory"]}],
- "ratelimits":[{"name":"RATE_LIMITER","namespace_id":"1001","simple":{"limit":120,"period":60}}],
+ "ratelimits":[{"name":"RATE_LIMITER","namespace_id":"1001","simple":{"limit":120,"period":60}},{"name":"AUTH_RATE_LIMITER","namespace_id":"1002","simple":{"limit":10,"period":60}}],
  "observability":{"enabled":false}
 }

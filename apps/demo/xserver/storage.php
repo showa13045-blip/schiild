@@ -15,7 +15,7 @@ $publicRoot = realpath($_SERVER['DOCUMENT_ROOT']);
 if (!$realRoot || !$publicRoot || $realRoot === $publicRoot || str_starts_with($realRoot, $publicRoot . DIRECTORY_SEPARATOR)) fail(503);
 $method = $_SERVER['REQUEST_METHOD'];
 $key = $_GET['key'] ?? '';
-if (!is_string($key) || !preg_match('#^(photos/[a-f0-9]{64}/\d{4}-\d{2}-\d{2}|works/[A-Z0-9]{8}/\d{4}-\d{2}-\d{2})$#D', $key)) fail(400);
+if (!is_string($key) || !preg_match('#^(photos/[a-f0-9]{64}/\d{4}-\d{2}-\d{2}|works/[A-Z0-9]{8}/\d{4}-\d{2}-\d{2}|global/\d{4}-\d{2}-\d{2}/[a-f0-9]{64})$#D', $key)) fail(400);
 if (!in_array($method, ['GET', 'PUT'], true)) fail(405);
 $timestamp = $_SERVER['HTTP_X_SCHIILD_TIME'] ?? '';
 $signature = $_SERVER['HTTP_X_SCHIILD_SIGNATURE'] ?? '';
@@ -34,7 +34,8 @@ if ($method === 'GET') {
 }
 $size = @getimagesizefromstring($body);
 $photo = str_starts_with($key, 'photos/');
-if (!$size || $size[0] !== ($photo ? 1080 : 128) || $size[1] !== ($photo ? 1080 : 128) || $size[2] !== ($photo ? IMAGETYPE_JPEG : IMAGETYPE_PNG)) fail(400);
+$dimension = $photo ? 1080 : (str_starts_with($key, 'global/') ? 256 : 128);
+if (!$size || $size[0] !== $dimension || $size[1] !== $dimension || $size[2] !== ($photo ? IMAGETYPE_JPEG : IMAGETYPE_PNG)) fail(400);
 $lock = fopen($file . '.lock', 'c');
 if (!$lock || !flock($lock, LOCK_EX)) fail(503);
 if (is_file($file)) { flock($lock, LOCK_UN); fclose($lock); http_response_code(200); exit; }

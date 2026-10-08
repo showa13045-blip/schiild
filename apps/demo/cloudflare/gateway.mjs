@@ -18,7 +18,7 @@ export async function gateway(request,env){
   if(!/^[a-f0-9]{64}$/.test(credential??''))return json({error:'unauthorized'},401,cors);
   const stub=env.ATELIERS.get(env.ATELIERS.idFromName('shared-demo-v1'));
   // JSON parsing and image processing belong to the Durable Object CPU budget.
-  const result=await stub.fetch(new Request('https://internal/execute',{method:'POST',headers:{Authorization:`Bearer ${credential}`,'Content-Type':'application/json'},body:all}));
+  const result=await stub.fetch(new Request('https://internal/execute',{method:'POST',headers:{Authorization:`Bearer ${credential}`,'Content-Type':'application/json','X-Demo-IP':ip},body:all}));
   return new Response(result.body,{status:result.status,headers:{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...cors}});
  }catch{return json({error:'unavailable'},503,cors);}
 }

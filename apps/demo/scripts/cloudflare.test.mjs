@@ -29,8 +29,8 @@ test('Cloudflare codec and SQLite metadata preserve concurrent membership, image
  const work=await execute({action:'work',code:room.code,day:room.day},first);
  assert.equal(work.image,(await execute({action:'work',code:room.code,day:room.day},guest)).image);
  const metadata=await sharp(Buffer.from(work.image.split(',')[1],'base64')).metadata();assert.equal(metadata.width,128);assert.equal(metadata.height,128);
- assert.equal(images.size,3);assert.equal(db.prepare('SELECT count(*) as n FROM rooms').get().n,1);
- const row=db.prepare('SELECT data FROM rooms').get().data;assert(!row.includes('base64'));assert(!row.includes(first));
+ assert.equal(images.size,3);assert.equal(db.prepare("SELECT count(*) as n FROM rooms WHERE key LIKE 'rooms/%'").get().n,1);
+ const row=db.prepare("SELECT data FROM rooms WHERE key LIKE 'rooms/%'").get().data;assert(!row.includes('base64'));assert(!row.includes(first));
  await assert.rejects(execute({action:'post',code:room.code,day:room.day,photo:'data:image/jpeg;base64,AAAA'},first),e=>e.code==='window_closed');
  await assert.rejects(workerImages.normalize(Buffer.from('broken')));
  await assert.rejects(workerImages.normalize(await sharp({create:{width:1,height:1,channels:3,background:'#fff'}}).jpeg().toBuffer()));

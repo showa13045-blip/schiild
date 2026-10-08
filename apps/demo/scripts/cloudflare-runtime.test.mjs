@@ -31,6 +31,15 @@ test('workerd and durable SQLite run complete shared generation against the actu
   await call('generate',{code:room.code,day:room.day});
   const made=await call('work',{code:room.code,day:room.day}),guest=await call('work',{code:room.code,day:room.day},second);
   assert.equal(made.image,guest.image);const meta=await sharp(Buffer.from(made.image.split(',')[1],'base64')).metadata();assert.equal(meta.width,128);
+  const global=await call('global',{day:room.day}),globalGuest=await call('global',{day:room.day},second),globalOutside=await call('global',{day:room.day},'c'.repeat(64));
+  assert.equal(global.image,globalGuest.image);assert.equal(global.image,globalOutside.image);assert.equal(global.count,2);assert.equal(globalOutside.x,undefined);
+  assert.equal((await sharp(Buffer.from(global.image.split(',')[1],'base64')).metadata()).width,256);
+  const account=await call('account.register',{username:'runtime_member',password:'runtime-password-29',name:'あさ'},first);
+  assert.equal(account.account.ateliers[0].code,room.code);assert.equal(account.account.ateliers[0].canGenerate,true);
+  const login=await call('account.login',{username:'runtime_member',password:'runtime-password-29'},'c'.repeat(64));
+  assert.equal((await call('state',{code:room.code},login.token)).canGenerate,true);assert.equal((await call('global',{day:room.day},login.token)).x,global.x);
+  await call('account.logout',{},login.token);
+  const expired=await mf.dispatchFetch('https://api.example/api/atelier',{method:'POST',headers:{Authorization:`Bearer ${login.token}`},body:JSON.stringify({action:'account.me'})});assert.equal(expired.status,401);
   const invalid=await mf.dispatchFetch('https://api.example/api/atelier',{method:'POST',headers:{Authorization:`Bearer ${first}`},body:'[]'});assert.equal(invalid.status,400);
  }finally{if(mf)await mf.dispose();child.kill();await new Promise(resolve=>child.once('exit',resolve));await rm(root,{recursive:true,force:true});}
 });

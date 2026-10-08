@@ -1,5 +1,6 @@
 import {createHash, randomBytes, randomInt} from 'node:crypto';
 import {partition, random, shuffle} from '../src/engine.ts';
+import {globalService} from './global-service.mjs';
 
 export class ApiError extends Error {
  constructor(status, code){super(code);this.status=status;this.code=code;}
@@ -13,7 +14,8 @@ const photoKey=(member,day)=>`photos/${member}/${day}`;
 
 // The store contract uses strong reads and conditional writes. Never overwrite a
 // room revision after another participant has changed it.
-export function createAtelierService(store,{now=()=>Date.now(),images}={}){
+export function createAtelierService(store,{now=()=>Date.now(),images,memberForCredential=digest}={}){
+ const global=globalService(store,{now,images});
  async function read(code){const entry=await store.getWithMetadata(roomKey(code),{type:'json'});if(!entry)fail(404,'not_found');return entry;}
  async function mutate(code,change){
   for(let attempt=0;attempt<12;attempt++){
@@ -35,7 +37,8 @@ export function createAtelierService(store,{now=()=>Date.now(),images}={}){
  }
  return async function execute(body,credential){
   if(!credential||!/^[a-f0-9]{64}$/.test(credential))fail(401,'unauthorized');
-  const member=digest(credential),action=body.action,code=String(body.code??'');
+  const member=memberForCredential(credential),action=body.action,code=String(body.code??'');
+  if(action==='global')return global.view(String(body.day??utcDay(now())),member);
   if(action==='create'){
    if(typeof body.name!=='string'||!body.name.trim()||body.name.length>40||![2,5,12,20].includes(body.capacity))fail(400,'invalid');
    for(let attempt=0;attempt<8;attempt++){
@@ -78,7 +81,10 @@ export function createAtelierService(store,{now=()=>Date.now(),images}={}){
    room=await mutate(code,room=>{
     const today=current(room);if(today.status!=='open')fail(409,'window_closed');
     today.posts[authorize(room,member)]=key;room.days[day]=today;return room;
-   });return summary(room,member);
+   });
+   const photo=await store.get(key,{type:'arrayBuffer'});if(!photo)fail(503,'unavailable');
+   await global.record(day,member,code,photo);
+   return summary(room,member);
   }
   if(action==='generate'){
    if(room.creator!==member)fail(403,'forbidden');
