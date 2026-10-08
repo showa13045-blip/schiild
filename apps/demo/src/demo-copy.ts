@@ -1,5 +1,7 @@
 // Approved demo-only additions. Production copy and requirements remain unchanged.
 export const demoCopy={
+ // User-selected label override for the demo's GLOBAL statistics.
+ 'global.stat.posts':'総投稿数',
  'demo.draft.generate':'今日のシールトを仮生成する',
  'demo.draft.loading':'仮生成しています',
  'demo.draft.label':'デモ専用・仮表示',
