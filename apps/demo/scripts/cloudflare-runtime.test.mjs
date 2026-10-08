@@ -38,6 +38,11 @@ test('workerd and durable SQLite run complete shared generation against the actu
   assert.equal(account.account.ateliers[0].code,room.code);assert.equal(account.account.ateliers[0].canGenerate,true);
   const login=await call('account.login',{username:'runtime_member',password:'runtime-password-29'},'c'.repeat(64));
   assert.equal((await call('state',{code:room.code},login.token)).canGenerate,true);assert.equal((await call('global',{day:room.day},login.token)).x,global.x);
+  await call('leave',{code:room.code},login.token);
+  assert.equal((await call('account.me',{},login.token)).account.ateliers.length,0);
+  const remaining=await call('state',{code:room.code},second);assert.equal(remaining.members,1);assert.equal(remaining.canGenerate,true);assert.equal(remaining.postedSlots.length,2);
+  assert.equal((await call('work',{code:room.code,day:room.day},second)).image,made.image);assert.equal((await call('global',{day:room.day},login.token)).image,global.image);
+  assert.equal((await call('join',{code:room.code},login.token)).hasPhoto,true);
   await call('account.logout',{},login.token);
   const expired=await mf.dispatchFetch('https://api.example/api/atelier',{method:'POST',headers:{Authorization:`Bearer ${login.token}`},body:JSON.stringify({action:'account.me'})});assert.equal(expired.status,401);
   const invalid=await mf.dispatchFetch('https://api.example/api/atelier',{method:'POST',headers:{Authorization:`Bearer ${first}`},body:'[]'});assert.equal(invalid.status,400);

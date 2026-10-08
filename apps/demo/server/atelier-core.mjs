@@ -1,6 +1,7 @@
 import {createHash, randomBytes, randomInt} from 'node:crypto';
 import {partition, random, shuffle} from '../src/engine.ts';
 import {globalService} from './global-service.mjs';
+import {participants,memberCount,snapshotDays} from './membership.mjs';
 
 export class ApiError extends Error {
  constructor(status, code){super(code);this.status=status;this.code=code;}
@@ -19,18 +20,18 @@ export function createAtelierService(store,{now=()=>Date.now(),images,memberForC
  async function read(code){const entry=await store.getWithMetadata(roomKey(code),{type:'json'});if(!entry)fail(404,'not_found');return entry;}
  async function mutate(code,change){
   for(let attempt=0;attempt<12;attempt++){
-   const {data,etag}=await read(code);const next=await change(data);
+   const {data,etag}=await read(code);const next=await change(snapshotDays(data));
    const result=await store.setJSON(roomKey(code),next,{onlyIfMatch:etag});
    if(result.modified)return next;
   }
   fail(409,'retry');
  }
  function daySeed(room,day){return parseInt(digest(`${room.code}/${day}/${room.seed}`).slice(0,7),16);}
- function current(room){const day=utcDay(now());return room.days[day]??{day,seed:daySeed(room,day),posts:{},status:'open'};}
+ function current(room){const day=utcDay(now());return room.days[day]??{day,seed:daySeed(room,day),members:[...room.members],posts:{},status:'open'};}
  function authorize(room,member){const slot=room.members.indexOf(member);if(slot<0)fail(403,'forbidden');return slot;}
  function summary(room,member){
   const day=utcDay(now()),today=room.days[day],slot=authorize(room,member);
-  return {code:room.code,name:room.name,capacity:room.capacity,members:room.members.length,day,
+  return {code:room.code,name:room.name,capacity:room.capacity,members:memberCount(room),day,
    seed:today?.seed??daySeed(room,day),slot,postedSlots:Object.keys(today?.posts??{}).map(Number),
    hasPhoto:Boolean(today?.posts[slot]),canGenerate:room.creator===member,
    status:today?.status??'open',works:Object.values(room.days).filter(d=>d.status==='ready').sort((a,b)=>b.day.localeCompare(a.day)).map(d=>({day:d.day,seed:d.seed,count:Object.keys(d.posts).length,index:d.index,custody:d.custodian===member?'self':'other'}))};
@@ -53,14 +54,30 @@ export function createAtelierService(store,{now=()=>Date.now(),images,memberForC
   if(!codePattern.test(code))fail(404,'not_found');
   if(action==='preview'){
    const {data:room}=await read(code);
-   return {code,name:room.name,capacity:room.capacity,members:room.members.length,total:Object.values(room.days).filter(d=>d.status==='ready').length};
+   return {code,name:room.name,capacity:room.capacity,members:memberCount(room),total:Object.values(room.days).filter(d=>d.status==='ready').length};
   }
   if(action==='join'){
    const room=await mutate(code,room=>{
     if(room.members.includes(member))return room;
-    if(room.members.length>=room.capacity)fail(409,'full');
-    room.members.push(member);return room;
+    if(memberCount(room)>=room.capacity)fail(409,'full');
+    const today=current(room),previous=participants(room,today).indexOf(member);
+    // A departed participant can return to their own recorded slot today.
+    let slot=previous>=0&&!room.members[previous]?previous:room.members.findIndex((value,n)=>!value&&!today.posts[n]);
+    if(slot<0){if(room.members.length>=room.capacity)fail(409,'slots_reserved');slot=room.members.length;}
+    room.members[slot]=member;
+    if(room.days[today.day])room.days[today.day].members[slot]=member;
+    room.creator??=member;
+    return room;
    });return summary(room,member);
+  }
+  if(action==='leave'){
+   await mutate(code,room=>{
+    const slot=room.members.indexOf(member);if(slot<0)return room;
+    room.members[slot]=null;
+    if(room.creator===member)room.creator=room.members.find(Boolean)??null;
+    return room;
+   });
+   return {done:true,code};
   }
   let {data:room}=await read(code);const slot=authorize(room,member);
   if(action==='state')return summary(room,member);
@@ -95,7 +112,7 @@ export function createAtelierService(store,{now=()=>Date.now(),images,memberForC
     if(!Object.keys(today.posts).length)fail(409,'no_photos');
     today.status='generating';
     const contributors=Object.keys(today.posts).map(Number);
-    today.custodian=room.members[contributors[randomInt(contributors.length)]];
+    today.custodian=participants(room,today)[contributors[randomInt(contributors.length)]];
     today.index=Object.values(room.days).filter(d=>d.status==='ready').length+1;
     room.days[day]=today;return room;
    });

@@ -2,6 +2,7 @@
 import {createHash} from 'node:crypto';
 import {ApiError} from './atelier-core.mjs';
 import {listRecords} from './accounts.mjs';
+import {participants} from './membership.mjs';
 const digest=value=>createHash('sha256').update(value).digest('hex');
 const dayKey=day=>`globals/${day}`;
 export function globalService(store,{images,now=()=>Date.now()}={}){
@@ -22,7 +23,7 @@ export function globalService(store,{images,now=()=>Date.now()}={}){
  async function bootstrap(day){
   const rows=await listRecords(store,'rooms/'),seen=new Set();
   for(const {data:room} of rows){const posts=room.days[day]?.posts??{};for(const [slot,key] of Object.entries(posts)){
-   const member=room.members[Number(slot)];if(seen.has(`${member}/${room.code}`))continue;seen.add(`${member}/${room.code}`);
+   const member=participants(room,room.days[day])[Number(slot)];if(seen.has(`${member}/${room.code}`))continue;seen.add(`${member}/${room.code}`);
    const existing=(await store.getWithMetadata(dayKey(day),{type:'json'}))?.data;
    if(existing?.pixels[member]&&existing.ateliers.includes(room.code))continue;
    const photo=await store.get(key,{type:'arrayBuffer'});if(photo)await record(day,member,room.code,photo);

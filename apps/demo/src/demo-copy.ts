@@ -2,6 +2,11 @@
 export const demoCopy={
  'demo.atelier.delete':'アトリエを削除する',
  'demo.atelier.delete_body':'この端末内の「{name}」と履歴を削除します。元に戻せません。',
+ 'demo.atelier.leave':'アトリエを抜ける',
+ 'demo.atelier.leave_note':'アトリエを抜けても、記録した写真・作品・GLOBALは残ります。招待コードで再び参加できます。',
+ 'demo.atelier.leave_creator':'作成者が抜けると、生成権限は残っている参加者へ引き継がれます。',
+ 'demo.atelier.leave_slots':'投稿済みの区画を別の参加者が使えるのは、翌日からです。',
+ 'demo.atelier.slots_reserved':'今日の投稿済み区画が残っているため、翌日から参加できます。',
  'demo.shared.create_note':'友達を招待して、今日の1枚を同じシールトに残せます。',
  'demo.shared.join_now':'参加すると、今日から1枚を記録できます。',
  'demo.shared.share_note':'このリンクか8文字のコードを友達に渡してください。',

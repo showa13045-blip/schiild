@@ -3,7 +3,7 @@ import {initial,load,dayAfter} from './model';
 import type {State} from './model';
 export type Invitation={code:string;name:string;capacity:number;online?:boolean};
 export type Atelier=Invitation&{creator:string|null;activeFrom:string;state:State};
-export type Collection={version:2;device:string;selected:string;ateliers:Atelier[]};
+export type Collection={version:2;device:string;selected:string;ateliers:Atelier[];departed?:Atelier[]};
 export const COLLECTION='schiild.demo.ateliers.v2';
 export function restore():Collection{
  try{const value=JSON.parse(localStorage.getItem(COLLECTION)||'null');if(value?.version===2&&typeof value.device==='string'&&Array.isArray(value.ateliers))return value;}catch{/* Fall back to the original demo. */}
@@ -16,12 +16,21 @@ export function parseInvite(value:string):Invitation|null{
 }
 export function addAtelier(collection:Collection,invitation:Invitation,created:boolean):Collection{
  if(collection.ateliers.some(a=>a.code===invitation.code))return collection;
+ const previous=collection.departed?.find(a=>a.code===invitation.code&&!a.online);
+ if(previous)return {...collection,selected:previous.code,ateliers:[...collection.ateliers,previous],departed:collection.departed?.filter(a=>a.code!==previous.code)};
  const day=collection.ateliers.find(a=>a.code===collection.selected)?.state.day??new Date().toISOString().slice(0,10);
  const state=initial(invitation.capacity,false);state.day=day;
  const activeFrom=created||invitation.online?day:dayAfter(day);
  const shared=collection.ateliers.find(a=>a.state.day===day&&a.state.photo)?.state.photo;
  if(created&&shared&&!invitation.online){state.photo=shared;state.count=1;}
  return {...collection,selected:invitation.code,ateliers:[...collection.ateliers,{...invitation,creator:created?collection.device:null,activeFrom,state}]};
+}
+export function leaveAtelier(collection:Collection,code:string):Collection{
+ const target=collection.ateliers.find(a=>a.code===code);if(!target)return collection;
+ const ateliers=collection.ateliers.filter(a=>a.code!==code);
+ // Keep local records for rejoining; shared records remain on the server.
+ const departed=target.online?collection.departed:[...(collection.departed??[]).filter(a=>a.code!==code),target];
+ return {...collection,ateliers,departed,selected:collection.selected===code?(ateliers[0]?.code??''):collection.selected};
 }
 export function removeAtelier(collection:Collection,code:string):Collection{
  const target=collection.ateliers.find(a=>a.code===code);if(!target||target.creator!==collection.device)return collection;
