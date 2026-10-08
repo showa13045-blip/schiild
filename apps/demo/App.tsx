@@ -10,6 +10,9 @@ import {preferences} from './src/preferences';
 import CameraHelp from './src/CameraHelp';
 import {cameraProblem} from './src/camera-recovery';
 import type {CameraProblem} from './src/camera-recovery';
+import DraftPreview from './src/DraftPreview';
+import {localDraft} from './src/draft';
+import type {Draft} from './src/draft';
 export {default} from './src/AtelierApp';
 
 
@@ -76,16 +79,25 @@ export function Reveal({work,atelier,onOpened,onNext,shared=false}:{work:Work;at
 
 export function Experience({entry,onChange,onManage,onAccount,onGlobal,navigation}:{entry:Atelier;onChange:(state:State)=>void;onManage:()=>void;onAccount:()=>void;onGlobal:(day:string,sample?:Work)=>void;navigation:Navigation}){
  const atelier=entry.name,cap=entry.capacity;
- const [state,setState]=useState<State|null>(entry.state),[screen,setScreen]=useState<'home'|'camera'|'work'|'archive'>('home'),[selected,setSelected]=useState<string|null>(null),[panel,setPanel]=useState(false),[busy,setBusy]=useState(false),[storageError,setStorageError]=useState(false);
+ const [state,setState]=useState<State|null>(entry.state),[screen,setScreen]=useState<'home'|'camera'|'work'|'archive'|'draft'>('home'),[selected,setSelected]=useState<string|null>(null),[panel,setPanel]=useState(false),[busy,setBusy]=useState(false),[storageError,setStorageError]=useState(false);
+ const [draft,setDraft]=useState<Draft|null>(null),[draftError,setDraftError]=useState(''),draftSequence=useRef(0);
  const taps=useRef<number[]>([]);
  useEffect(()=>{document.documentElement.lang='ja';document.title='Schiild';},[]);
  useEffect(()=>{if(state)try{onChange(state);setStorageError(false);}catch{setStorageError(true);}},[state]);
  useEffect(()=>{if(!state?.photo||state.ready||state.count>=Math.max(1,cap-2))return;const timer=setTimeout(()=>setState(old=>old?{...old,count:Math.min(Math.max(1,cap-2),old.count+1)}:old),2200);return()=>clearTimeout(timer);},[state?.count,state?.photo,state?.ready]);
  useEffect(()=>{if(navigation.openDay){setSelected(navigation.openDay);setScreen('work');}else setScreen(navigation.screen);},[navigation.revision]);
+ useEffect(()=>()=>{draftSequence.current++;},[]);
+ useEffect(()=>{if(draft&&(draft.day!==state?.day||state?.ready)){setDraft(null);setScreen('home');}},[draft,state?.day,state?.ready]);
  if(!state)return <div className="loading">{t('common.loading')}</div>;
  const work=state.works.find(w=>w.day===selected);
  function hidden(){const now=Date.now();taps.current=[...taps.current.filter(time=>now-time<1100),now];if(taps.current.length>=3){setPanel(true);taps.current=[];}}
  function navigate(next:typeof screen){setScreen(next);window.scrollTo(0,0);}
+ async function preview(){
+  if(!state||busy)return;const sequence=++draftSequence.current;setBusy(true);setDraftError('');
+  try{const next=await localDraft(state);if(sequence===draftSequence.current){setDraft(next);navigate('draft');}}
+  catch{if(sequence===draftSequence.current)setDraftError(t('demo.draft.failed'));}
+  finally{if(sequence===draftSequence.current)setBusy(false);}
+ }
  async function advance(){if(!state||busy)return;setBusy(true);try{
   const photo=state.photo?await decode(state.photo):null;
   const image=dataUrl(render(state.rects,state.rects.map(r=>r.slot===0?photo:r.slot<state.count?synthetic(state.seed+r.slot*33):null),state.seed));
@@ -100,9 +112,11 @@ export function Experience({entry,onChange,onManage,onAccount,onGlobal,navigatio
   <div className="artboard today-board" data-testid="today-board">{state.rects.map(rect=>{const filled=rect.slot===0?Boolean(state.photo):rect.slot<=(state.photo?state.count-1:state.count);return <div key={rect.slot} className={`today-tile ${filled?'filled':''}`} style={{left:`${rect.x/128*100}%`,top:`${rect.y/128*100}%`,width:`${rect.w/128*100}%`,height:`${rect.h/128*100}%`,background:filled?['#b5b7a5','#c39582','#87a6b0','#d7c49a','#61777a'][rect.slot%5]:undefined}}/>;})}</div>
   <div className="today-details"><div><span className="wall-label">{t('atelier.closes_in')}</span><p className="countdown">{state.ready?'00:00:00':'00:15:00'}</p></div><div className="recorded"><span className="mono">{t('atelier.recorded',{n:state.count,cap})}</span><div className="members">{Array.from({length:cap},(_,n)=><i key={n} className={n<state.count?'recorded':''}/>)}</div></div></div><p className="window">{windowText(state.day)}</p>
   {state.day<entry.activeFrom?<p>{t('join.tomorrow')}</p>:state.ready?<Button onClick={()=>{setSelected(state.ready);navigate('work');}}>{t('reveal.open')}</Button>:state.photo?<div className="posted"><p>{t('posted.title')}<br/>{t('posted.title2')}</p>{state.count>=Math.max(1,cap-2)&&<span className="muted">{t('atelier.almost',{n:cap-state.count})}</span>}</div>:<Button onClick={()=>navigate('camera')}><Icon kind="camera"/>{t('onboarding.1.title')}</Button>}
+  {!state.ready&&state.day>=entry.activeFrom&&<div className="draft-actions"><p className="wall-label">{t('demo.draft.label')}</p><Button secondary disabled={busy||state.count===0} onClick={()=>void preview()}>{t(busy?'demo.draft.loading':'demo.draft.generate')}</Button>{state.count===0&&<p className="shared-note">{t('demo.draft.empty')}</p>}{draftError&&<p className="error" role="alert">{draftError}</p>}</div>}
   <div className="section-heading"><h2>{t('atelier.past')}</h2><button className="text-button" onClick={()=>navigate('archive')}><Icon kind="arrow"/></button></div><div className="recent">{state.works.filter(w=>w.opened).slice(0,3).map(w=><button key={w.day} onClick={()=>{setSelected(w.day);navigate('work');}}><img src={w.image} alt={t('schiild.label',{index:w.index})}/><span className="mono">{short(w.day)}</span></button>)}</div>
  </section>}
  {screen==='camera'&&<Camera atelier={atelier} day={state.day} onBack={()=>navigate('home')} onSubmit={url=>{const next={...state,photo:url,count:state.count+1};onChange(next);setState(next);navigate('home');}}/>}
+ {screen==='draft'&&draft&&<DraftPreview draft={draft} atelier={atelier} local onClose={()=>{setDraft(null);navigate('home');}}/>}
  {screen==='work'&&work&&<Reveal atelier={atelier} key={work.day} work={work} onOpened={()=>setState(old=>old?{...old,works:old.works.map(w=>w.day===work.day?{...w,opened:true}:w)}:old)} onNext={()=>onGlobal(work.day,work)}/>}
  {screen==='archive'&&<section><div className="eyebrow">{t('me.link.archive')}</div><h1>{state.day.slice(0,4)}</h1><div className="stats"><div><span>{t('archive.total')}</span><b>{state.works.filter(w=>w.opened).length}</b></div><div><span>{t('archive.month_stat')}</span><b>{state.works.filter(w=>w.opened&&w.day.slice(0,7)===state.day.slice(0,7)).length}</b></div></div><p className="archive-note">{t('archive.note')}</p><div className="archive-grid">{state.works.filter(w=>w.opened).map(w=><article key={w.day}><button className="archive-work" onClick={()=>{setSelected(w.day);navigate('work');}}><img src={w.image} alt={t('schiild.label',{index:w.index})}/><div className="archive-caption"><span className="mono">{short(w.day)}</span><span className="mono">{String(w.index).padStart(3,'0')}</span></div></button><span className="sample-label">{t('demo.global.sample')}</span><button className="archive-global text-button" onClick={()=>onGlobal(w.day,w)}>{t('global.label')}</button></article>)}</div></section>}
  </main>

@@ -1,5 +1,14 @@
 // Approved demo-only additions. Production copy and requirements remain unchanged.
 export const demoCopy={
+ 'demo.draft.generate':'今日のシールトを仮生成する',
+ 'demo.draft.loading':'仮生成しています',
+ 'demo.draft.label':'デモ専用・仮表示',
+ 'demo.draft.title':'今日のシールト（仮）',
+ 'demo.draft.count':'仮生成時の投稿 {n}枚',
+ 'demo.draft.note':'現在の記録から生成した一時的な表示です。投稿は続けられます。正式な作品・抽選・アーカイブ・GLOBALは変更されません。戻って何度でも仮生成できます。',
+ 'demo.draft.samples':'ひとりで試すアトリエでは、サンプルの参加者の写真も使います。',
+ 'demo.draft.empty':'1枚以上の記録が集まると、今日のシールトを仮生成できます。',
+ 'demo.draft.failed':'仮生成できませんでした。投稿済みの写真は残っています。もう一度試してください。',
  'demo.camera.help':'許可の手順を見る',
  'demo.camera.retry':'カメラを再確認する',
  'demo.camera.manual':'カメラの許可は、お使いのブラウザや端末の設定で変更します。下の手順で確認してください。',

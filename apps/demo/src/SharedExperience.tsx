@@ -8,10 +8,13 @@ import type {Work} from './model';
 import type {Atelier} from './ateliers';
 import {fetchWork,sharedRequest} from './shared-api';
 import type {SharedState} from './shared-api';
+import DraftPreview from './DraftPreview';
+import type {Draft} from './draft';
 
 export default function SharedExperience({entry,onManage,onShare,onAccount,onGlobal,navigation}:{entry:Atelier;onManage:()=>void;onShare:()=>void;onAccount:()=>void;onGlobal:(day:string)=>void;navigation:Navigation}){
  const [state,setState]=useState<SharedState|null>(null),[error,setError]=useState(''),[screen,setScreen]=useState('home'),[work,setWork]=useState<Work|null>(null),[busy,setBusy]=useState(false),[confirm,setConfirm]=useState(false),[cameraDay,setCameraDay]=useState<string|null>(null);
  const sequence=useRef(0),mounted=useRef(true),lock=useRef(false);
+ const [draft,setDraft]=useState<Draft|null>(null),draftController=useRef<AbortController|null>(null);
  async function refresh(){
   const request=++sequence.current;
   try{const next=await sharedRequest('state',{code:entry.code});if(mounted.current&&request===sequence.current){setState(next);setError('');}}
@@ -22,7 +25,7 @@ export default function SharedExperience({entry,onManage,onShare,onAccount,onGlo
   const timer=setInterval(()=>{if(document.visibilityState==='visible'&&!lock.current)void refresh();},5000);
   const resume=()=>{if(document.visibilityState==='visible'&&!lock.current)void refresh();};
   document.addEventListener('visibilitychange',resume);
-  return()=>{mounted.current=false;sequence.current++;clearInterval(timer);document.removeEventListener('visibilitychange',resume);};
+  return()=>{mounted.current=false;sequence.current++;draftController.current?.abort();clearInterval(timer);document.removeEventListener('visibilitychange',resume);};
  },[entry.code]);
  function go(next:string){if(next==='camera')setCameraDay(state?.day??null);setScreen(next);window.scrollTo(0,0);}
  async function post(photo:string){
@@ -45,6 +48,14 @@ export default function SharedExperience({entry,onManage,onShare,onAccount,onGlo
   }catch(cause){setError(cause instanceof Error?cause.message:t('demo.shared.unavailable'));}
   finally{lock.current=false;setBusy(false);}
  }
+ async function preview(){
+  if(!state||lock.current)return;lock.current=true;setBusy(true);setError('');sequence.current++;
+  const controller=new AbortController();draftController.current=controller;
+  try{const next=await sharedRequest<Draft>('draft',{code:entry.code,day:state.day},controller.signal);if(mounted.current){setDraft(next);go('draft');await refresh();}}
+  catch(cause){if(mounted.current&&!controller.signal.aborted)setError(cause instanceof Error?cause.message:t('demo.draft.failed'));}
+  finally{lock.current=false;if(mounted.current)setBusy(false);draftController.current=null;}
+ }
+ useEffect(()=>{if(draft&&state&&(draft.day!==state.day||state.status!=='open')){setDraft(null);go('home');}},[draft,state?.day,state?.status]);
  useEffect(()=>{if(navigation.openDay)void open(navigation.openDay);else go(navigation.screen);},[navigation.revision]);
  const short=(day:string)=>`${Number(day.slice(5,7))}/${Number(day.slice(8))}`;
  const rects=state?partition(state.capacity,random(state.seed)):[];
@@ -61,11 +72,13 @@ export default function SharedExperience({entry,onManage,onShare,onAccount,onGlo
       {state.hasPhoto?<div className="posted"><p>{t('demo.shared.saved')}</p></div>:state.status==='open'&&<button className="button" onClick={()=>go('camera')}>{t('onboarding.1.title')}</button>}
       {state.canGenerate&&state.postedSlots.length>0?<><p className="shared-note">{t('demo.shared.generate_note')}</p><button className="button secondary" disabled={busy} onClick={()=>setConfirm(true)}>{t(state.status==='generating'?'common.retry':'demo.shared.generate')}</button></>:<p className="shared-note">{t(state.hasPhoto?'demo.shared.wait':'demo.shared.before_photo')}</p>}
      </>}
+     {state.status==='open'&&<div className="draft-actions"><p className="wall-label">{t('demo.draft.label')}</p><button className="button secondary" disabled={busy||state.postedSlots.length===0} onClick={()=>void preview()}>{t(busy?'demo.draft.loading':'demo.draft.generate')}</button>{state.postedSlots.length===0&&<p className="shared-note">{t('demo.draft.empty')}</p>}</div>}
     </div>
     <div className="section-heading"><h2>{t('atelier.past')}</h2><button className="text-button" onClick={()=>go('archive')}>{t('archive.title')}</button></div>
     <div className="atelier-list">{state.works.slice(0,3).map(item=><button className="atelier-select" key={item.day} disabled={busy} onClick={()=>void open(item.day)}><span className="mono">{item.day}</span><span className="mono">{t('schiild.label',{index:item.index})}</span></button>)}</div>
    </section>}
    {screen==='camera'&&<Camera shared day={cameraDay??state.day} atelier={state.name} onBack={()=>go('home')} onSubmit={post}/>}
+   {screen==='draft'&&draft&&<DraftPreview draft={draft} atelier={state.name} onClose={()=>{setDraft(null);go('home');}}/>}
    {screen==='work'&&work&&<Reveal shared key={work.day} atelier={state.name} work={work} onOpened={()=>{try{localStorage.setItem(`schiild.shared.opened.${entry.code}.${work.day}`,'true');}catch{/* Viewing remains possible when local storage is full. */}}} onNext={()=>onGlobal(work.day)}/>}
    {screen==='archive'&&<section><h1>{t('archive.title')}</h1><div className="stats"><div><span>{t('archive.total')}</span><b>{state.works.length}</b></div></div><p className="archive-note">{t('archive.note')}</p>{state.works.map(item=><article className="archive-row" key={item.day}><button className="atelier-select" disabled={busy} onClick={()=>void open(item.day)}><span className="mono">{item.day}</span><span className="mono">{t('schiild.label',{index:item.index})}</span></button><button className="archive-global text-button" onClick={()=>onGlobal(item.day)}>{t('global.label')}</button></article>)}</section>}
   </>}

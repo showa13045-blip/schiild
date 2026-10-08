@@ -29,6 +29,13 @@ export function createAtelierService(store,{now=()=>Date.now(),images,memberForC
  function daySeed(room,day){return parseInt(digest(`${room.code}/${day}/${room.seed}`).slice(0,7),16);}
  function current(room){const day=utcDay(now());return room.days[day]??{day,seed:daySeed(room,day),members:[...room.members],posts:{},status:'open'};}
  function authorize(room,member){const slot=room.members.indexOf(member);if(slot<0)fail(403,'forbidden');return slot;}
+ async function composeDay(room,today){
+  return images.compose(partition(room.capacity,random(today.seed)),async rect=>{
+   const key=today.posts[rect.slot];if(!key)return null;
+   const photo=await store.get(key,{type:'arrayBuffer'});if(!photo)fail(503,'generation_failed');
+   return photo;
+  },today.seed);
+ }
  function summary(room,member){
   const day=utcDay(now()),today=room.days[day],slot=authorize(room,member);
   return {code:room.code,name:room.name,capacity:room.capacity,members:memberCount(room),day,
@@ -81,6 +88,14 @@ export function createAtelierService(store,{now=()=>Date.now(),images,memberForC
   }
   let {data:room}=await read(code);const slot=authorize(room,member);
   if(action==='state')return summary(room,member);
+  // DEMO ONLY: render a read-only snapshot, without sealing the day or saving it.
+  if(action==='draft'){
+   const day=utcDay(now());if(body.day!==day)fail(409,'window_closed');
+   const today=current(room);if(today.status!=='open')fail(409,'window_closed');
+   const count=Object.keys(today.posts).length;if(!count)fail(409,'no_photos');
+   const png=await composeDay(room,today);
+   return {day,image:`data:image/png;base64,${Buffer.from(png).toString('base64')}`,count,provisional:true};
+  }
   if(action==='post'){
    const day=utcDay(now());if(body.day!==day)fail(409,'window_closed');
    if(room.days[day]?.status&&room.days[day].status!=='open')fail(409,'window_closed');
@@ -120,12 +135,7 @@ export function createAtelierService(store,{now=()=>Date.now(),images,memberForC
    if(today.status!=='ready'){
     const artifactKey=`works/${code}/${day}`;
     if(!await store.get(artifactKey,{type:'arrayBuffer'})){
-     const rects=partition(room.capacity,random(today.seed));
-     const png=await images.compose(rects,async rect=>{
-      const key=today.posts[rect.slot];if(!key)return null;
-      const photo=await store.get(key,{type:'arrayBuffer'});if(!photo)fail(503,'generation_failed');
-      return photo;
-     },today.seed);
+     const png=await composeDay(room,today);
      await store.set(artifactKey,png.buffer.slice(png.byteOffset,png.byteOffset+png.byteLength),{onlyIfNew:true});
     }
     room=await mutate(code,room=>{room.days[day].status='ready';return room;});

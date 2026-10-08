@@ -25,7 +25,7 @@ export async function sharedRequest<T=SharedState>(action:string,values:Record<s
  if(!response.ok){
   const key=body.error;
   const accountErrors={account_invalid:'demo.account.invalid',account_taken:'demo.account.taken',account_linked:'demo.account.linked',login_invalid:'demo.account.login_invalid',login_limited:'demo.account.limited',session_expired:'demo.account.expired',unauthorized:'demo.account.expired',slots_reserved:'demo.atelier.slots_reserved'} as const;
-  throw new SharedError(key,key in accountErrors?t(accountErrors[key as keyof typeof accountErrors]):key==='not_found'?t('join.error.not_found'):key==='full'?t('join.error.full'):key==='window_closed'?t('error.window_closed'):key==='image_invalid'?t('demo.shared.image_invalid'):key==='no_photos'?t('demo.shared.no_photos'):key==='forbidden'?t('demo.shared.forbidden'):t('demo.shared.unavailable'));
+  throw new SharedError(key,key in accountErrors?t(accountErrors[key as keyof typeof accountErrors]):key==='not_found'?t('join.error.not_found'):key==='full'?t('join.error.full'):key==='window_closed'?t('error.window_closed'):key==='image_invalid'?t('demo.shared.image_invalid'):key==='no_photos'?t('demo.shared.no_photos'):key==='forbidden'?t('demo.shared.forbidden'):action==='draft'?t('demo.draft.failed'):t('demo.shared.unavailable'));
  }return body as T;
 }
 export async function sharedPreview(code:string,signal?:AbortSignal){return {...await sharedRequest<Omit<SharedPreview,'online'>>('preview',{code},signal),online:true as const};}

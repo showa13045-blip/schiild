@@ -28,9 +28,13 @@ test('workerd and durable SQLite run complete shared generation against the actu
   const photo=await sharp({create:{width:1080,height:1080,channels:3,background:'#c39582'}}).jpeg().toBuffer();
   await Promise.all([first,second].map(credential=>call('post',{code:room.code,day:room.day,photo:`data:image/jpeg;base64,${photo.toString('base64')}`},credential)));
   const state=await call('state',{code:room.code});assert.equal(state.postedSlots.length,2);
+  const draft=await call('draft',{code:room.code,day:room.day},second);assert.equal(draft.provisional,true);assert.equal(draft.count,2);
+  assert.deepEqual(await call('state',{code:room.code}),state);
+  assert.equal((await sharp(Buffer.from(draft.image.split(',')[1],'base64')).metadata()).width,128);
   await call('generate',{code:room.code,day:room.day});
   const made=await call('work',{code:room.code,day:room.day}),guest=await call('work',{code:room.code,day:room.day},second);
   assert.equal(made.image,guest.image);const meta=await sharp(Buffer.from(made.image.split(',')[1],'base64')).metadata();assert.equal(meta.width,128);
+  assert.equal(made.image,draft.image);
   const global=await call('global',{day:room.day}),globalGuest=await call('global',{day:room.day},second),globalOutside=await call('global',{day:room.day},'c'.repeat(64));
   assert.equal(global.image,globalGuest.image);assert.equal(global.image,globalOutside.image);assert.equal(global.count,2);assert.equal(globalOutside.x,undefined);
   assert.equal((await sharp(Buffer.from(global.image.split(',')[1],'base64')).metadata()).width,256);

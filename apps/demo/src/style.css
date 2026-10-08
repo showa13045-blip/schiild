@@ -17,6 +17,7 @@ html,body{height:auto!important;min-height:100%;overflow-x:hidden;overflow-y:aut
 .shared-art{image-rendering:pixelated;width:100%;aspect-ratio:1}
 .shared-actions{display:flex;flex-direction:column;gap:16px;margin:24px 0}
 .atelier-row[data-selected=true]{border-left:2px solid var(--ink);padding-left:16px}
+.draft-actions{margin-top:24px;padding-top:16px;border-top:1px solid var(--line)}.draft-actions>.wall-label{margin-bottom:12px}.draft-preview h1{margin:12px 0}.draft-preview>.mono{margin-top:12px}.draft-art{width:100%;aspect-ratio:1;image-rendering:pixelated;display:block}.draft-preview>.button{margin-top:24px}
 .global-page .loupe{width:calc(var(--global-pixel-size)*9);height:calc(var(--global-pixel-size)*9);background:var(--sunken)}
 .global-page .loupe img{width:calc(var(--global-pixel-size)*256);height:calc(var(--global-pixel-size)*256)}
 .global-page .loupe span{left:calc(var(--global-pixel-size)*4);top:calc(var(--global-pixel-size)*4);width:var(--global-pixel-size);height:var(--global-pixel-size)}
