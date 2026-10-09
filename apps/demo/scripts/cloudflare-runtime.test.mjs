@@ -41,6 +41,7 @@ test('workerd and durable SQLite run complete shared generation against the actu
   assert.equal(made.image,draft.image);
   const global=await call('global',{day:room.day}),globalGuest=await call('global',{day:room.day},second),globalOutside=await call('global',{day:room.day},'c'.repeat(64));
   assert.equal(global.image,globalGuest.image);assert.equal(global.image,globalOutside.image);assert.equal(global.count,2);assert.equal(globalOutside.x,undefined);
+  assert.equal(global.positions.length,2);assert(global.positions.includes(global.y*256+global.x));assert.deepEqual(global.positions,globalOutside.positions);
   assert.equal((await sharp(Buffer.from(global.image.split(',')[1],'base64')).metadata()).width,256);
   const account=await call('account.register',{username:'runtime_member',password:'runtime-password-29',name:'あさ'},first);
   assert.equal(account.account.ateliers[0].code,room.code);assert.equal(account.account.ateliers[0].canGenerate,true);
