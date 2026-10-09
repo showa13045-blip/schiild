@@ -4,7 +4,7 @@ import {mkdir} from 'node:fs/promises';
 const origin=process.env.DEMO_URL||'http://localhost:8085';
 const browser=await chromium.launch({headless:true,...(process.env.DEMO_BROWSER?{executablePath:process.env.DEMO_BROWSER}:{}),args:['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream']});
 const errors=[];
-async function camera(page){await page.goto(origin);page.on('pageerror',error=>errors.push(error.message));await page.getByTestId('today-board').waitFor();await page.getByRole('button',{name:'1日に1枚だけ',exact:true}).click();await page.getByRole('button',{name:'次へ',exact:true}).click();}
+async function camera(page){await page.goto(origin);page.on('pageerror',error=>errors.push(error.message));await page.getByTestId('today-board').waitFor();await page.getByRole('button',{name:'このアトリエに1日1枚',exact:true}).click();await page.getByRole('button',{name:'次へ',exact:true}).click();}
 async function fresh(options={}){const context=await browser.newContext({viewport:{width:390,height:844},permissions:['camera'],...options});return {context,page:await context.newPage()};}
 try{
  await mkdir('test-results',{recursive:true});

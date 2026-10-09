@@ -39,7 +39,7 @@ export function globalService(store,{images,now=()=>Date.now()}={}){
   if(!bytes){const made=await images.global(Object.values(data.pixels));await store.set(key,made,{onlyIfNew:true});bytes=await store.get(key,{type:'arrayBuffer'});}
   if(!bytes)throw new ApiError(503,'unavailable');
   const mine=data.pixels[member],all=await listRecords(store,'globals/');
-  return {day,image:`data:image/png;base64,${Buffer.from(bytes).toString('base64')}`,count:Object.keys(data.pixels).length,ateliers:data.ateliers.length,cumulative:all.reduce((n,row)=>n+Object.keys(row.data.pixels).length,0),final:day<today,...(mine?{x:mine.position%256,y:Math.floor(mine.position/256)}:{})};
+  return {day,image:`data:image/png;base64,${Buffer.from(bytes).toString('base64')}`,count:Object.keys(data.pixels).length,ateliers:data.ateliers.length,cumulative:all.reduce((n,row)=>n+Object.keys(row.data.pixels).length,0),area:{pixels:mine?1:0,total:65536,percent:(mine?1:0)/65536*100},final:day<today,...(mine?{x:mine.position%256,y:Math.floor(mine.position/256)}:{})};
  }
  return {record,view};
 }

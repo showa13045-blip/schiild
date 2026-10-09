@@ -30,17 +30,18 @@ test('two independent members post, generate and receive the same persisted imag
  assert.equal((await execute({action:'work',code,day},second)).image,made.image);
 });
 
-test('same UTC day image cannot be replaced, including across ateliers',async()=>{
+test('one immutable photo per atelier/day allows distinct photos in other ateliers',async()=>{
  const {execute,create}=setup(),room=await create(),day=room.day;
  await execute({action:'post',code:room.code,day,photo:red},first);
- await execute({action:'post',code:room.code,day,photo:blue},first);
+ await execute({action:'post',code:room.code,day,photo:red},first);
+ await assert.rejects(execute({action:'post',code:room.code,day,photo:blue},first),error=>error.code==='already_recorded');
  const other=await execute({action:'create',name:'もうひとつ',capacity:2},first);
  await execute({action:'post',code:other.code,day,photo:blue},first);
  await execute({action:'generate',code:room.code,day},first);await execute({action:'generate',code:other.code,day},first);
  for(const code of [room.code,other.code]){
   const image=(await execute({action:'work',code,day},first)).image;
   const data=await sharp(Buffer.from(image.split(',')[1],'base64')).raw().toBuffer();
-  let warm=0,cool=0;for(let n=0;n<data.length;n+=4){if(data[n]===195&&data[n+1]===149)warm++;if(data[n]===135&&data[n+1]===166)cool++;}assert(warm>0);assert.equal(cool,0);
+  let warm=0,cool=0;for(let n=0;n<data.length;n+=4){if(data[n]===195&&data[n+1]===149)warm++;if(data[n]===135&&data[n+1]===166)cool++;}if(code===room.code){assert(warm>0);assert.equal(cool,0);}else{assert(cool>0);assert.equal(warm,0);}
  }
 });
 

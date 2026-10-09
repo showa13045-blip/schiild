@@ -1,5 +1,5 @@
 import {createHash,createHmac} from 'node:crypto';
-const validKey=key=>/^(photos\/[a-f0-9]{64}\/\d{4}-\d{2}-\d{2}|works\/[A-Z0-9]{8}\/\d{4}-\d{2}-\d{2}|global\/\d{4}-\d{2}-\d{2}\/[a-f0-9]{64})$/.test(key);
+const validKey=key=>/^(photos\/[a-f0-9]{64}\/\d{4}-\d{2}-\d{2}(\/[a-f0-9]{64})?|works\/[A-Z0-9]{8}\/\d{4}-\d{2}-\d{2}|global\/\d{4}-\d{2}-\d{2}\/[a-f0-9]{64})$/.test(key);
 // Xserver holds binary images only. Metadata stays in Durable Objects.
 export function xserverImages({url,secret,fetcher=fetch,now=()=>Date.now(),allowLocal=false}){
  const endpoint=new URL(url);if(endpoint.protocol!=='https:'&&!(allowLocal&&endpoint.hostname==='127.0.0.1'))throw Error('storage_configuration');

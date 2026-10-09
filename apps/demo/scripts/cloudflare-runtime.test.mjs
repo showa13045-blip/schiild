@@ -58,6 +58,16 @@ test('workerd and durable SQLite run complete shared generation against the actu
   const remaining=await call('state',{code:room.code},second);assert.equal(remaining.members,1);assert.equal(remaining.canGenerate,true);assert.equal(remaining.postedSlots.length,2);
   assert.equal((await call('work',{code:room.code,day:room.day},second)).image,made.image);assert.equal((await call('global',{day:room.day},login.token)).image,global.image);
   assert.equal((await call('join',{code:room.code},login.token)).hasPhoto,true);
+  const different=await call('create',{name:'別の写真の窓',capacity:5},login.token),reused=await call('create',{name:'選んだ追加先',capacity:2},login.token);
+  const blue=await sharp({create:{width:1080,height:1080,channels:3,background:'#87a6b0'}}).jpeg().toBuffer();
+  await call('post',{code:different.code,day:room.day,photo:'data:image/jpeg;base64,'+blue.toString('base64')},login.token);
+  assert.notEqual((await call('post.photo',{sourceCode:different.code,day:room.day},login.token)).photo,(await call('post.photo',{sourceCode:room.code,day:room.day},login.token)).photo);
+  const copied=await call('reuse',{sourceCode:room.code,day:room.day,codes:[reused.code,different.code]},login.token);
+  assert.deepEqual(copied.results.map(value=>[value.done,value.error]),[[true,undefined],[false,'already_recorded']]);
+  const reusedDraft=await call('draft',{code:reused.code,day:room.day},login.token);assert(reusedDraft.area.pixels>0);
+  assert.equal((await call('global',{day:room.day},login.token)).area.pixels,1);
+  const area=await call('area',{},login.token);assert.equal(area.global.pixels,1);assert.equal(area.atelier.days,3);assert.equal(area.atelier.pixels,made.area.pixels+reusedDraft.area.pixels+(await call('state',{code:different.code},login.token)).area.pixels);
+  await call('leave',{code:room.code},login.token);assert.equal((await call('area',{},login.token)).atelier.pixels,area.atelier.pixels);
   await call('account.logout',{},login.token);
   const expired=await mf.dispatchFetch('https://api.example/api/atelier',{method:'POST',headers:{Authorization:`Bearer ${login.token}`},body:JSON.stringify({action:'account.me'})});assert.equal(expired.status,401);
   const invalid=await mf.dispatchFetch('https://api.example/api/atelier',{method:'POST',headers:{Authorization:`Bearer ${first}`},body:'[]'});assert.equal(invalid.status,400);

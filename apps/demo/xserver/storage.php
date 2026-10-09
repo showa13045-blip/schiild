@@ -15,7 +15,7 @@ $publicRoot = realpath($_SERVER['DOCUMENT_ROOT']);
 if (!$realRoot || !$publicRoot || $realRoot === $publicRoot || str_starts_with($realRoot, $publicRoot . DIRECTORY_SEPARATOR)) fail(503);
 $method = $_SERVER['REQUEST_METHOD'];
 $key = $_GET['key'] ?? '';
-if (!is_string($key) || !preg_match('#^(photos/[a-f0-9]{64}/\d{4}-\d{2}-\d{2}|works/[A-Z0-9]{8}/\d{4}-\d{2}-\d{2}|global/\d{4}-\d{2}-\d{2}/[a-f0-9]{64})$#D', $key)) fail(400);
+if (!is_string($key) || !preg_match('#^(photos/[a-f0-9]{64}/\d{4}-\d{2}-\d{2}(/[a-f0-9]{64})?|works/[A-Z0-9]{8}/\d{4}-\d{2}-\d{2}|global/\d{4}-\d{2}-\d{2}/[a-f0-9]{64})$#D', $key)) fail(400);
 if (!in_array($method, ['GET', 'PUT'], true)) fail(405);
 $timestamp = $_SERVER['HTTP_X_SCHIILD_TIME'] ?? '';
 $signature = $_SERVER['HTTP_X_SCHIILD_SIGNATURE'] ?? '';

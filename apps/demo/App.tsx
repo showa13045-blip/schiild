@@ -13,6 +13,8 @@ import type {CameraProblem} from './src/camera-recovery';
 import DraftPreview from './src/DraftPreview';
 import {localDraft} from './src/draft';
 import type {Draft} from './src/draft';
+import AreaDisplay from './src/AreaDisplay';
+import {rectArea} from './src/area';
 export {default} from './src/AtelierApp';
 
 
@@ -72,12 +74,13 @@ export function Reveal({work,atelier,onOpened,onNext,shared=false}:{work:Work;at
   {!started?<div className="ready-copy"><p>{t('reveal.ready',{date:short(work.day)})}</p><p className="mono muted">{t('reveal.date',{date:date(work.day)})}</p><Button onClick={()=>setStarted(true)}>{t('reveal.open')}</Button></div>:<>
    <div className="reveal-record" style={{opacity:record?1:0,transitionDuration:`${REVEAL.recordFade}ms`}}><h1>{atelier}</h1><p className="mono">{date(work.day)}　／　{work.count} {t('common.of')} {work.rects.length}</p><p className="window">{windowText(work.day)}</p></div>
    <div className="custody" style={{opacity:custody?1:0,transitionDuration:`${REVEAL.custodyFade}ms`}}><span className="wall-label">{t('reveal.custody_label')}</span><p>{t(work.custody==='self'?'reveal.custody.self':shared?'demo.shared.custody.other':'reveal.custody.other',{name:'ゆき'})}</p></div>
+   {complete&&<AreaDisplay area={work.area??rectArea(work.global?work.rects.find(rect=>rect.slot===0):undefined)}/>}
    {complete&&<Button onClick={onNext}>{t('global.label')} <Icon kind="arrow"/></Button>}
   </>}
  </section>;
 }
 
-export function Experience({entry,onChange,onManage,onAccount,onGlobal,navigation}:{entry:Atelier;onChange:(state:State)=>void;onManage:()=>void;onAccount:()=>void;onGlobal:(day:string,sample?:Work)=>void;navigation:Navigation}){
+export function Experience({entry,onChange,onManage,onAccount,onPosts,onGlobal,navigation}:{entry:Atelier;onChange:(state:State)=>void;onManage:()=>void;onAccount:()=>void;onPosts:()=>void;onGlobal:(day:string,sample?:Work)=>void;navigation:Navigation}){
  const atelier=entry.name,cap=entry.capacity;
  const [state,setState]=useState<State|null>(entry.state),[screen,setScreen]=useState<'home'|'camera'|'work'|'archive'|'draft'>('home'),[selected,setSelected]=useState<string|null>(null),[panel,setPanel]=useState(false),[busy,setBusy]=useState(false),[storageError,setStorageError]=useState(false);
  const [draft,setDraft]=useState<Draft|null>(null),[draftError,setDraftError]=useState(''),draftSequence=useRef(0);
@@ -102,7 +105,7 @@ export function Experience({entry,onChange,onManage,onAccount,onGlobal,navigatio
   const photo=state.photo?await decode(state.photo):null;
   const image=dataUrl(render(state.rects,state.rects.map(r=>r.slot===0?photo:r.slot<state.count?synthetic(state.seed+r.slot*33):null),state.seed));
   const global=photo?globalPixels(photo,state.seed):null;
-  const made:Work={day:state.day,image,rects:state.rects,order:shuffle(state.rects.map(r=>r.slot),random(state.seed+31)),count:state.count,index:(state.works[0]?.index??0)+1,custody:state.winner,opened:false,...(global?{global:dataUrl(global.pixels),x:global.x,y:global.y}:{})};
+  const made:Work={day:state.day,image,rects:state.rects,order:shuffle(state.rects.map(r=>r.slot),random(state.seed+31)),count:state.count,index:(state.works[0]?.index??0)+1,custody:state.winner,opened:false,area:rectArea(photo?state.rects.find(rect=>rect.slot===0):undefined),...(global?{global:dataUrl(global.pixels),x:global.x,y:global.y}:{})};
   setState({...state,ready:state.day,works:[made,...state.works.filter(w=>w.day!==state.day)]});setSelected(state.day);navigate('work');setPanel(false);
  }catch{setStorageError(true);}finally{setBusy(false);}}
  function nextDay(){if(!state)return;const seed=state.seed+131;setState({...state,day:dayAfter(state.day),seed,rects:partition(cap,random(seed)),photo:null,count:0,ready:null});setPanel(false);navigate('home');}
@@ -111,6 +114,7 @@ export function Experience({entry,onChange,onManage,onAccount,onGlobal,navigatio
  {screen==='home'&&<section><div className="eyebrow">{t('home.title')}</div><div className="title-row"><h1>{atelier}</h1><button className="text-button" onClick={onManage}>{t('home.title')} ＋</button></div>
   <div className="artboard today-board" data-testid="today-board">{state.rects.map(rect=>{const filled=rect.slot===0?Boolean(state.photo):rect.slot<=(state.photo?state.count-1:state.count);return <div key={rect.slot} className={`today-tile ${filled?'filled':''}`} style={{left:`${rect.x/128*100}%`,top:`${rect.y/128*100}%`,width:`${rect.w/128*100}%`,height:`${rect.h/128*100}%`,background:filled?['#b5b7a5','#c39582','#87a6b0','#d7c49a','#61777a'][rect.slot%5]:undefined}}/>;})}</div>
   <div className="today-details"><div><span className="wall-label">{t('atelier.closes_in')}</span><p className="countdown">{state.ready?'00:00:00':'00:15:00'}</p></div><div className="recorded"><span className="mono">{t('atelier.recorded',{n:state.count,cap})}</span><div className="members">{Array.from({length:cap},(_,n)=><i key={n} className={n<state.count?'recorded':''}/>)}</div></div></div><p className="window">{windowText(state.day)}</p>
+  <AreaDisplay area={rectArea(state.photo?state.rects.find(rect=>rect.slot===0):undefined)}/><p className="shared-note">{t('demo.posts.rule')}</p><button className="text-button" onClick={onPosts}>{t(state.photo?'demo.posts.reuse':'demo.posts.use')}</button>
   {state.day<entry.activeFrom?<p>{t('join.tomorrow')}</p>:state.ready?<Button onClick={()=>{setSelected(state.ready);navigate('work');}}>{t('reveal.open')}</Button>:state.photo?<div className="posted"><p>{t('posted.title')}<br/>{t('posted.title2')}</p>{state.count>=Math.max(1,cap-2)&&<span className="muted">{t('atelier.almost',{n:cap-state.count})}</span>}</div>:<Button onClick={()=>navigate('camera')}><Icon kind="camera"/>{t('onboarding.1.title')}</Button>}
   {!state.ready&&state.day>=entry.activeFrom&&<div className="draft-actions"><p className="wall-label">{t('demo.draft.label')}</p><Button secondary disabled={busy||state.count===0} onClick={()=>void preview()}>{t(busy?'demo.draft.loading':'demo.draft.generate')}</Button>{state.count===0&&<p className="shared-note">{t('demo.draft.empty')}</p>}{draftError&&<p className="error" role="alert">{draftError}</p>}</div>}
   <div className="section-heading"><h2>{t('atelier.past')}</h2><button className="text-button" onClick={()=>navigate('archive')}><Icon kind="arrow"/></button></div><div className="recent">{state.works.filter(w=>w.opened).slice(0,3).map(w=><button key={w.day} onClick={()=>{setSelected(w.day);navigate('work');}}><img src={w.image} alt={t('schiild.label',{index:w.index})}/><span className="mono">{short(w.day)}</span></button>)}</div>

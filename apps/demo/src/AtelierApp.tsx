@@ -3,7 +3,7 @@ import {Experience} from '../App';
 import SharedExperience from './SharedExperience';
 import {t} from './copy';
 import {partition,random} from './engine';
-import {COLLECTION,restore,inviteUrl,parseInvite,addAtelier,removeAtelier,leaveAtelier} from './ateliers';
+import {COLLECTION,restore,inviteUrl,parseInvite,addAtelier,removeAtelier,leaveAtelier,reuseLocal} from './ateliers';
 import {sharedPreview,sharedRequest,saveSession,clearSession,SharedError} from './shared-api';
 import type {Account} from './shared-api';
 import DemoNav from './DemoNav';
@@ -11,6 +11,7 @@ import type {Navigation} from './DemoNav';
 import GlobalPage from './GlobalPage';
 import type {GlobalSelection} from './GlobalPage';
 import AccountPage,{SettingsPage} from './AccountPage';
+import DailyPostsPage from './DailyPostsPage';
 import {googleLogout} from './GoogleSignIn';
 import {preferences,savePreferences} from './preferences';
 import type {Preferences} from './preferences';
@@ -42,8 +43,13 @@ export default function AtelierApp(){
  const active=collection.ateliers.find(a=>a.code===collection.selected);
  function change(state:State){
   if(!collection)return;
-  const next={...collection,ateliers:collection.ateliers.map(a=>a.code===collection.selected?{...a,state}:!a.online&&state.photo&&a.state.day===state.day&&a.activeFrom<=state.day&&!a.state.photo&&!a.state.ready?{...a,state:{...a.state,photo:state.photo,count:a.state.count+1}}:a)};
+  const next={...collection,ateliers:collection.ateliers.map(a=>a.code===collection.selected?{...a,state}:a)};
   localStorage.setItem(COLLECTION,JSON.stringify(next));setCollection(next);
+ }
+ function reuseLocalPosts(day:string,photo:string,codes:string[]){
+  const next=reuseLocal(collection!,day,photo,codes);
+  try{localStorage.setItem(COLLECTION,JSON.stringify(next.collection));setCollection(next.collection);return next.results;}
+  catch{return next.results.map(result=>({...result,done:false,error:'unavailable'}));}
  }
  function go(next:string){setMessage('');setView(next);window.scrollTo(0,0);}
  function visit(screen:'home'|'archive',openDay?:string){setNavigation(previous=>({screen,openDay,revision:previous.revision+1}));go(active?'experience':'list');}
@@ -95,11 +101,12 @@ export default function AtelierApp(){
  const preview=partition(capacity,random(414));
  const confirm=collection.ateliers.find(a=>a.code===deleting&&a.creator===collection.device&&!a.online);
  return <div className={settings.reduceMotion?'demo-shell motion-reduced':'demo-shell'}>
- {view==='experience'&&active?(active.online?<SharedExperience key={active.code+accountRevision} entry={active} navigation={navigation} onManage={()=>go('list')} onAccount={()=>go('me')} onGlobal={day=>showGlobal(day)} onShare={()=>{setSharing(active);go('share');}}/>:<Experience key={active.code} entry={active} navigation={navigation} onChange={change} onManage={()=>go('list')} onAccount={()=>go('me')} onGlobal={(day,sample)=>showGlobal(day,sample)}/>):<div className="app atelier-app">
+ {view==='experience'&&active?(active.online?<SharedExperience key={active.code+accountRevision} entry={active} navigation={navigation} onManage={()=>go('list')} onAccount={()=>go('me')} onPosts={()=>go('posts')} onGlobal={day=>showGlobal(day)} onShare={()=>{setSharing(active);go('share');}}/>:<Experience key={active.code} entry={active} navigation={navigation} onChange={change} onManage={()=>go('list')} onAccount={()=>go('me')} onPosts={()=>go('posts')} onGlobal={(day,sample)=>showGlobal(day,sample)}/>):<div className="app atelier-app">
   <header className="header"><button className="brand" aria-label="Schiild" onClick={()=>go('me')}><span className="brand-symbol"><i/><i/><i/></span>Schiild</button><button className="text-button" disabled={busy} onClick={()=>visit('home')}>{t('common.back')}</button></header>
   {message&&<p className="shared-error" role="status">{message}</p>}
+  {view==='posts'&&<DailyPostsPage collection={collection} onLocalReuse={reuseLocalPosts} onRefresh={()=>setAccountRevision(value=>value+1)} onBack={()=>visit('home')}/>}
   {view==='global'&&<GlobalPage selection={globalSelection} revision={accountRevision}/>}
-  {view==='me'&&<AccountPage key={account?.username??'guest'} account={account} joined={collection.ateliers.length} name={settings.name} onAuthenticate={authenticate} onGoogle={authenticateGoogle} onName={updateName} onArchive={()=>visit('archive')} onSettings={()=>go('settings')} onCustody={(code,day)=>{setCollection({...collection,selected:code});setNavigation(previous=>({screen:'home',openDay:day,revision:previous.revision+1}));go('experience');}}/>}
+  {view==='me'&&<AccountPage key={account?.username??'guest'} account={account} joined={collection.ateliers.length} name={settings.name} collection={collection} onPosts={()=>go('posts')} onAuthenticate={authenticate} onGoogle={authenticateGoogle} onName={updateName} onArchive={()=>visit('archive')} onSettings={()=>go('settings')} onCustody={(code,day)=>{setCollection({...collection,selected:code});setNavigation(previous=>({screen:'home',openDay:day,revision:previous.revision+1}));go('experience');}}/>}
   {view==='settings'&&<SettingsPage value={settings} onChange={updateSettings} account={account} onAccount={()=>go('me')} onLogout={logout}/>}
   {(view==='list'||view==='experience')&&<section><h1>{t('home.title')}</h1><p>{t('demo.shared.create_note')}</p><div className="atelier-list">{collection.ateliers.map(a=><div className="atelier-row" key={a.code} data-selected={a.code===collection.selected} data-code={a.code}><button className="atelier-select" disabled={busy} onClick={()=>{setCollection({...collection,selected:a.code});setNavigation(previous=>({screen:'home',revision:previous.revision+1}));go('experience');}}><strong>{a.name}</strong><span className="mono">{a.online?t('create.capacity_label'):t('demo.shared.local')} {a.capacity}</span></button><div className="atelier-actions"><button disabled={busy} onClick={()=>{if(a.online){setSharing(a);go('share');}else void create(a);}}>{t('created.share')}</button><button disabled={busy} onClick={()=>void leave(a)}>{t('demo.atelier.leave')}</button>{a.creator===collection.device&&!a.online&&<button onClick={()=>setDeleting(a.code)}>{t('demo.atelier.delete')}</button>}</div></div>)}</div><p className="shared-note">{t('demo.atelier.leave_note')}</p><p className="shared-note">{t('demo.atelier.leave_creator')}</p><p className="shared-note">{t('demo.atelier.leave_slots')}</p>{!collection.ateliers.length&&<p>{t('empty.atelier.body')}</p>}<button className="button" disabled={busy} onClick={()=>{setName('');setCapacity(12);go('create');}}>{t('create.title')}</button><button className="button secondary" disabled={busy} onClick={()=>{setInvitation(null);setInput('');go('join');}}>{t('join.title')}</button></section>}
   {view==='create'&&<section><h1>{t('create.title')}</h1><p>{t('demo.shared.create_note')}</p><label className="field">{t('create.name_label')}<input maxLength={40} value={name} placeholder={t('create.name_ph')} onChange={e=>setName(e.target.value)}/></label><p className="wall-label">{t('create.capacity_label')}</p><div className="capacities">{[2,5,12,20].map(n=><button key={n} aria-pressed={capacity===n} onClick={()=>setCapacity(n)}>{n}</button>)}</div><div className="artboard capacity-preview">{preview.map(r=><div key={r.slot} style={{position:'absolute',left:`${r.x/128*100}%`,top:`${r.y/128*100}%`,width:`${r.w/128*100}%`,height:`${r.h/128*100}%`,border:'1px solid var(--strong)'}}/>)}</div><p>{t('create.capacity_explain',{n:capacity})}</p><p className="mono">{t('create.capacity_avg',{px:Math.round(128*128/capacity)})}</p><h2>{t('create.fixed.title')}</h2><p>{t('create.fixed.body')}</p><button className="button" disabled={!name.trim()||busy} onClick={()=>void create()}>{t(busy?'common.loading':'create.submit')}</button></section>}

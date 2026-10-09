@@ -1,6 +1,7 @@
 import {partition,random,render,synthetic,dataUrl,shuffle} from './engine';
 import type {Rect} from './engine';
-export type Work={day:string;image:string;rects:Rect[];order:number[];count:number;index:number;custody:'self'|'other';opened:boolean;global?:string;x?:number;y?:number};
+import type {Area} from './area';
+export type Work={day:string;image:string;rects:Rect[];order:number[];count:number;index:number;custody:'self'|'other';opened:boolean;global?:string;x?:number;y?:number;area?:Area};
 export type State={version:1;day:string;seed:number;rects:Rect[];photo:string|null;count:number;works:Work[];winner:'self'|'other';ready:string|null};
 export const STORAGE='schiild.demo.v1';
 export const dayAfter=(day:string,n=1)=>new Date(Date.parse(day+'T00:00:00Z')+n*86400000).toISOString().slice(0,10);

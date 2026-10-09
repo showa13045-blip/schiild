@@ -9,7 +9,7 @@ const [page,guest,other]=await Promise.all(contexts.map(context=>context.newPage
 for(const p of [page,guest,other])p.on('pageerror',e=>errors.push(e.message));
 const row=(p,code)=>p.locator(`.atelier-row[data-code="${code}"]`);
 const nav=p=>p.locator('.nav');
-async function record(p){await p.getByRole('button',{name:'1日に1枚だけ',exact:true}).click();await p.getByRole('button',{name:'次へ',exact:true}).click();await p.locator('.shutter:not([disabled])').waitFor();await p.locator('.shutter').click();await p.getByRole('button',{name:'確定する',exact:true}).click();await p.locator('.posted').waitFor();}
+async function record(p){await p.getByRole('button',{name:'このアトリエに1日1枚',exact:true}).click();await p.getByRole('button',{name:'次へ',exact:true}).click();await p.locator('.shutter:not([disabled])').waitFor();await p.locator('.shutter').click();await p.getByRole('button',{name:'確定する',exact:true}).click();await p.locator('.posted').waitFor();}
 async function join(p,url){await p.goto(url);await p.getByRole('heading',{name:'抜けても残る窓',exact:true}).waitFor();await p.getByRole('button',{name:'参加する',exact:true}).click();}
 async function global(p){await nav(p).getByRole('button',{name:'GLOBAL SCHIILD',exact:true}).click();await p.locator('.global-overview img').waitFor();return p.locator('.global-overview img').getAttribute('src');}
 try{

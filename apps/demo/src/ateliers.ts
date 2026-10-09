@@ -21,8 +21,7 @@ export function addAtelier(collection:Collection,invitation:Invitation,created:b
  const day=collection.ateliers.find(a=>a.code===collection.selected)?.state.day??new Date().toISOString().slice(0,10);
  const state=initial(invitation.capacity,false);state.day=day;
  const activeFrom=created||invitation.online?day:dayAfter(day);
- const shared=collection.ateliers.find(a=>a.state.day===day&&a.state.photo)?.state.photo;
- if(created&&shared&&!invitation.online){state.photo=shared;state.count=1;}
+ // DEMO ONLY: a new atelier starts unposted; reuse requires an explicit selection.
  return {...collection,selected:invitation.code,ateliers:[...collection.ateliers,{...invitation,creator:created?collection.device:null,activeFrom,state}]};
 }
 export function leaveAtelier(collection:Collection,code:string):Collection{
@@ -35,4 +34,13 @@ export function leaveAtelier(collection:Collection,code:string):Collection{
 export function removeAtelier(collection:Collection,code:string):Collection{
  const target=collection.ateliers.find(a=>a.code===code);if(!target||target.creator!==collection.device)return collection;
  const ateliers=collection.ateliers.filter(a=>a.code!==code);return {...collection,ateliers,selected:collection.selected===code?(ateliers[0]?.code??''):collection.selected};
+}
+export function reuseLocal(collection:Collection,day:string,photo:string,codes:string[]){
+ const results=codes.map(code=>{
+  const target=collection.ateliers.find(entry=>entry.code===code&&!entry.online);
+  const error=!target?'forbidden':target.state.day!==day||target.activeFrom>day||target.state.ready?'window_closed':target.state.photo?'already_recorded':undefined;
+  return {code,name:target?.name,done:!error,...(error?{error}:{})};
+ });
+ const next={...collection,ateliers:collection.ateliers.map(entry=>results.some(result=>result.code===entry.code&&result.done)?{...entry,state:{...entry.state,photo,count:entry.state.count+1}}:entry)};
+ return {collection:next,results};
 }
