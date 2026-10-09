@@ -6,6 +6,7 @@ import {metadataStore} from './metadata-store.mjs';
 import {xserverImages} from './xserver-store.mjs';
 import {gateway} from './gateway.mjs';
 import {accounts} from '../server/accounts.mjs';
+import {validGoogleClient} from '../server/google-identity.mjs';
 export class AtelierDirectory extends DurableObject {
  constructor(ctx,env){
   super(ctx,env);this.env=env;this.storage=ctx.storage;
@@ -19,7 +20,9 @@ export class AtelierDirectory extends DurableObject {
    const store=metadataStore(this.storage,images),auth=accounts(store,{googleClientId:this.env.GOOGLE_CLIENT_ID}),credential=request.headers.get('authorization')?.replace(/^Bearer /,'');
    let result;
    if(typeof body.action==='string'&&body.action.startsWith('account.')){
-    if(['account.login','account.register','account.google','account.google.start','account.delete'].includes(body.action)&&this.env.AUTH_RATE_LIMITER&&!((await this.env.AUTH_RATE_LIMITER.limit({key:request.headers.get('X-Demo-IP')??'local'})).success))throw new ApiError(429,'login_limited');
+    // Disabled feature discovery must not consume password-login/deletion attempts.
+    const authAttempt=['account.login','account.register','account.google','account.delete'].includes(body.action)||body.action==='account.google.start'&&validGoogleClient(this.env.GOOGLE_CLIENT_ID);
+    if(authAttempt&&this.env.AUTH_RATE_LIMITER&&!((await this.env.AUTH_RATE_LIMITER.limit({key:request.headers.get('X-Demo-IP')??'local'})).success))throw new ApiError(429,'login_limited');
     result=await auth.execute(body,credential);
    }else{
     const actor=await auth.identity(credential);

@@ -10,6 +10,14 @@ import {pathToFileURL} from 'node:url';
 import sharp from 'sharp';
 import {generateKeyPair,exportJWK,SignJWT} from 'jose';
 const bundle=process.env.DEMO_WORKER_BUNDLE,php=process.env.DEMO_PHP;
+test('disabled Google discovery preserves password auth quota; active Google discovery remains limited',{skip:!bundle},async()=>{
+ const require=createRequire(import.meta.url),wranglerRequire=createRequire(realpathSync(require.resolve('wrangler/package.json'))),{Miniflare,convertV4MiniflareOptions}=await import(pathToFileURL(wranglerRequire.resolve('miniflare')).href);
+ for(const enabled of [false,true]){
+  const mf=new Miniflare(convertV4MiniflareOptions({name:'quota-test',scriptPath:bundle,modules:true,compatibilityDate:'2026-10-08',compatibilityFlags:['nodejs_compat'],durableObjects:{ATELIERS:{className:'AtelierDirectory',useSQLite:true}},ratelimits:{AUTH_RATE_LIMITER:{namespace_id:'1001',simple:{limit:1,period:60}}},bindings:{ALLOWED_ORIGINS:'http://localhost:8085',XSERVER_STORAGE_URL:'https://schiild.pickleballnavi.jp/storage.php',XSERVER_STORAGE_SECRET:'f'.repeat(64),...(enabled?{GOOGLE_CLIENT_ID:'123456789-runtime.apps.googleusercontent.com'}:{})}}));
+  const call=async(action,values={})=>mf.dispatchFetch('https://api.example/api/atelier',{method:'POST',headers:{Origin:'http://localhost:8085',Authorization:'Bearer '+'a'.repeat(64)},body:JSON.stringify({action,...values})});
+  try{if(enabled){assert.equal((await call('account.google.start')).status,200);assert.equal((await call('account.google.start')).status,429);}else{for(let n=0;n<15;n++){const response=await call('account.google.start');assert.equal(response.status,200);assert.deepEqual(await response.json(),{enabled:false});}assert.equal((await call('account.register',{username:'quota_member',password:'quota-password-29'})).status,200);assert.equal((await call('account.login',{username:'quota_member',password:'quota-password-29'})).status,429);}}finally{await mf.dispose();}
+ }
+});
 test('workerd and durable SQLite run complete shared generation against the actual PHP gateway',{skip:!bundle||!php},async()=>{
  const require=createRequire(import.meta.url),wranglerRequire=createRequire(realpathSync(require.resolve('wrangler/package.json')));
  const {Miniflare,convertV4MiniflareOptions}=await import(pathToFileURL(wranglerRequire.resolve('miniflare')).href);
