@@ -157,6 +157,7 @@ export function createAtelierService(store,{now=()=>Date.now(),images,memberForC
    if(room.creator!==member)fail(403,'forbidden');
    const day=utcDay(now());if(body.day!==day)fail(409,'window_closed');
    room=await mutate(code,room=>{
+    if(room.creator!==member)fail(403,'forbidden');
     const today=current(room);
     if(today.status==='ready'||today.status==='generating')return room;
     if(!Object.keys(today.posts).length)fail(409,'no_photos');

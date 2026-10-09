@@ -20,20 +20,25 @@ export function accounts(store,{now=()=>Date.now(),googleClientId='',verifyGoogl
  async function identity(credential){
   if(!/^[a-f0-9]{64}$/.test(credential??''))fail(401,'unauthorized');
   const member=hash(credential),session=await store.getWithMetadata(`sessions/${member}`,{type:'json'});
-  if(session){if(session.data.revoked||session.data.expires<=now())fail(401,'session_expired');
-   const account=await store.getWithMetadata(accountKey(session.data.username),{type:'json'});if(!account)fail(401,'unauthorized');
+  if(session){if(session.data.deleted)fail(401,'account_deleted');if(session.data.revoked||session.data.expires<=now())fail(401,'session_expired');
+   const account=await store.getWithMetadata(accountKey(session.data.username),{type:'json'});
+   // A deletion and fresh registration may reuse the ID between the two reads.
+   const currentSession=await store.getWithMetadata(`sessions/${member}`,{type:'json'});
+   if(currentSession?.data.deleted||account&&session.data.member&&session.data.member!==account.data.member)fail(401,'account_deleted');
+   if(!currentSession||currentSession.data.revoked||currentSession.data.expires<=now())fail(401,'session_expired');
+   if(!account)fail(401,'unauthorized');
    return {member:account.data.member,account:account.data,sessionKey:`sessions/${member}`};
   }
-  if(await store.getWithMetadata(`members/${member}`,{type:'json'}))fail(401,'unauthorized');
+  const mapping=await store.getWithMetadata(`members/${member}`,{type:'json'});if(mapping)fail(401,mapping.data.deleted?'account_deleted':'unauthorized');
   return {member,account:null};
  }
  async function profile(account){
   const rooms=(await listRecords(store,'rooms/')).map(row=>row.data).filter(room=>room.members.includes(account.member));
-  return {username:account.username,name:account.name,since:account.since,googleEmail:account.googleEmail,ateliers:rooms.map(room=>({code:room.code,name:room.name,capacity:room.capacity,canGenerate:room.creator===account.member})),custody:rooms.flatMap(room=>Object.values(room.days).filter(day=>day.status==='ready'&&day.custodian===account.member).map(day=>({code:room.code,name:room.name,day:day.day,index:day.index})))};
+  return {username:account.username,name:account.name,since:account.since,googleEmail:account.googleEmail,canDelete:Boolean(account.passwordHash),ateliers:rooms.map(room=>({code:room.code,name:room.name,capacity:room.capacity,canGenerate:room.creator===account.member})),custody:rooms.flatMap(room=>Object.values(room.days).filter(day=>day.status==='ready'&&day.custodian===account.member).map(day=>({code:room.code,name:room.name,day:day.day,index:day.index})))};
  }
  async function session(account){
   const token=randomBytes(32).toString('hex');
-  await store.setJSON(`sessions/${hash(token)}`,{username:account.username,expires:now()+SESSION_MS,revoked:false},{onlyIfNew:true});
+  if(!(await store.setJSON(`sessions/${hash(token)}`,{username:account.username,member:account.member,expires:now()+SESSION_MS,revoked:false},{onlyIfNew:true})).modified)fail(401,'account_deleted');
   return {token,account:await profile(account)};
  }
  async function execute(body,credential){
@@ -105,10 +110,29 @@ export function accounts(store,{now=()=>Date.now(),googleClientId='',verifyGoogl
   if(body.action==='account.me')return {account:actor.account?await profile(actor.account):null};
   if(!actor.account)fail(401,'unauthorized');
   if(body.action==='account.logout'){await store.setJSON(actor.sessionKey,{username:actor.account.username,expires:0,revoked:true});return {done:true};}
+  if(body.action==='account.delete'){
+   if(body.confirmUsername!==actor.account.username||typeof body.password!=='string'||!body.password.length||body.password.length>128)fail(400,'account_invalid');
+   if(!actor.account.passwordHash)fail(400,'delete_requires_password');
+   const attemptsKey=`auth-attempts/${hash('delete/'+actor.account.username)}`;let claimed;
+   for(let n=0;n<20;n++){
+    const row=await store.getWithMetadata(attemptsKey,{type:'json'}),attempts=row?.data;
+    if(attempts&&attempts.until>now()&&attempts.count>=5)fail(429,'login_limited');
+    const result=await store.setJSON(attemptsKey,{count:attempts&&attempts.until>now()?attempts.count+1:1,until:attempts&&attempts.until>now()?attempts.until:now()+600000},row?{onlyIfMatch:row.etag}:{onlyIfNew:true});if(result.modified){claimed=true;break;}
+   }
+   if(!claimed)fail(429,'login_limited');
+   const derived=await passwordHash(body.password,actor.account.salt);
+   if(!timingSafeEqual(Buffer.from(derived,'hex'),Buffer.from(actor.account.passwordHash,'hex')))fail(401,'login_invalid');
+   await identity(credential);
+   if(!store.deleteAccount)fail(503,'unavailable');
+   const result=await store.deleteAccount(actor.account,randomBytes(32).toString('hex'),[attemptsKey,`auth-attempts/${hash(actor.account.username)}`]);
+   if(!result.modified)fail(401,'account_deleted');
+   return {done:true};
+  }
   if(body.action==='account.update'){
    if(typeof body.name!=='string'||!body.name.trim()||body.name.length>40)fail(400,'account_invalid');
    for(let n=0;n<20;n++){
     const row=await store.getWithMetadata(accountKey(actor.account.username),{type:'json'});
+    if(!row||row.data.member!==actor.account.member)fail(401,'account_deleted');
     const updated={...row.data,name:body.name.trim()};
     if((await store.setJSON(accountKey(updated.username),updated,{onlyIfMatch:row.etag})).modified)return {account:await profile(updated)};
    }

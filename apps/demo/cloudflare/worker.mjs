@@ -19,7 +19,7 @@ export class AtelierDirectory extends DurableObject {
    const store=metadataStore(this.storage,images),auth=accounts(store,{googleClientId:this.env.GOOGLE_CLIENT_ID}),credential=request.headers.get('authorization')?.replace(/^Bearer /,'');
    let result;
    if(typeof body.action==='string'&&body.action.startsWith('account.')){
-    if(['account.login','account.register','account.google','account.google.start'].includes(body.action)&&this.env.AUTH_RATE_LIMITER&&!((await this.env.AUTH_RATE_LIMITER.limit({key:request.headers.get('X-Demo-IP')??'local'})).success))throw new ApiError(429,'login_limited');
+    if(['account.login','account.register','account.google','account.google.start','account.delete'].includes(body.action)&&this.env.AUTH_RATE_LIMITER&&!((await this.env.AUTH_RATE_LIMITER.limit({key:request.headers.get('X-Demo-IP')??'local'})).success))throw new ApiError(429,'login_limited');
     result=await auth.execute(body,credential);
    }else{
     const actor=await auth.identity(credential);

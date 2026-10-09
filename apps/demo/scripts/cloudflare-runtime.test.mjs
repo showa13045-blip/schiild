@@ -72,5 +72,9 @@ test('workerd and durable SQLite run complete shared generation against the actu
   await call('account.logout',{},login.token);
   const expired=await mf.dispatchFetch('https://api.example/api/atelier',{method:'POST',headers:{Authorization:`Bearer ${login.token}`},body:JSON.stringify({action:'account.me'})});assert.equal(expired.status,401);
   const invalid=await mf.dispatchFetch('https://api.example/api/atelier',{method:'POST',headers:{Authorization:`Bearer ${first}`},body:'[]'});assert.equal(invalid.status,400);
+  await call('account.delete',{confirmUsername:'runtime_member',password:'runtime-password-29'},returning.token);
+  for(const credential of [first,login.token,returning.token]){const rejected=await mf.dispatchFetch('https://api.example/api/atelier',{method:'POST',headers:{Authorization:`Bearer ${credential}`},body:JSON.stringify({action:'account.me'})});assert.equal(rejected.status,401);assert.equal((await rejected.json()).error,'account_deleted');}
+  assert.equal((await call('work',{code:room.code,day:room.day},second)).image,made.image);assert.equal((await call('global',{day:room.day},second)).image,global.image);
+  const fresh=await call('account.register',{username:'runtime_member',password:'fresh-account-password-29'},'5'.repeat(64));assert.equal(fresh.account.ateliers.length,0);assert.equal((await call('area',{},fresh.token)).global.pixels,0);
  }finally{if(mf)await mf.dispose();child.kill();await new Promise(resolve=>child.once('exit',resolve));await rm(root,{recursive:true,force:true});}
 });
