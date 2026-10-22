@@ -36,8 +36,22 @@ export function metadataStore(storage,images,{notificationEvents=false,now=()=>D
    }
    return {modified:true,account:updated};
   });},
+  async registerWhatsApp(account){return storage.transactionSync(()=>{
+   const read=key=>{const row=storage.sql.exec('SELECT data,etag FROM rooms WHERE key = ?',key).toArray()[0];return row?{data:JSON.parse(row.data),etag:row.etag}:null;};
+   const whatsappKey=`whatsapp-identities/${account.whatsappSubject}`,mapping=read(whatsappKey)?.data;
+   if(mapping)return {modified:false,reason:'whatsapp',username:mapping.username};
+   const memberKey=`members/${account.member}`,accountKey=`accounts/${account.username}`,linked=read(memberKey)?.data,current=read(accountKey)?.data;
+   if(linked?.deleted||linked&&linked.username!==account.username||current&&current.member!==account.member||current?.whatsappSubject&&current.whatsappSubject!==account.whatsappSubject)return {modified:false,reason:'member'};
+   const updated={...(current??account),whatsappSubject:account.whatsappSubject};
+   for(const [key,data] of [[accountKey,updated],[memberKey,{username:account.username}],[whatsappKey,{username:account.username}]]){
+    const etag=String(Number(read(key)?.etag??0)+1);
+    storage.sql.exec('INSERT INTO rooms (key,data,etag) VALUES (?,?,?) ON CONFLICT(key) DO UPDATE SET data=excluded.data,etag=excluded.etag',key,JSON.stringify(data),etag);
+   }
+   return {modified:true,account:updated};
+  });},
   async getWithMetadata(key){const row=storage.sql.exec('SELECT data, etag FROM rooms WHERE key = ?',key).toArray()[0];return row?{data:JSON.parse(row.data),etag:row.etag,metadata:{}}:null;},
   async pruneLineChallenges(now){storage.sql.exec("DELETE FROM rooms WHERE key LIKE 'line-challenges/%' AND json_extract(data,'$.expires') <= ?",now);},
+  async pruneWhatsAppChallenges(now){storage.sql.exec("DELETE FROM rooms WHERE key LIKE 'whatsapp-challenges/%' AND json_extract(data,'$.expires') <= ?",now);},
   async deleteAccount(account,anonymousMember,attemptKeys,options={}){return storage.transactionSync(()=>{
    const current=storage.sql.exec('SELECT data FROM rooms WHERE key = ?',`accounts/${account.username}`).toArray()[0];
    if(!current||JSON.parse(current.data).member!==account.member)return {modified:false};
@@ -52,7 +66,7 @@ export function metadataStore(storage,images,{notificationEvents=false,now=()=>D
   async set(key,data){const read=key=>{const value=storage.sql.exec('SELECT data FROM rooms WHERE key = ?',key).toArray()[0];return value?JSON.parse(value.data):undefined;};if(!metadataWriteAllowed(key,data,read))return {modified:false};return images.set(key,data);},
   async deleteJSON(key){if(!/^push-(preferences|subscriptions|events|deliveries)\/[a-f0-9]{64}$/.test(key))throw Error('metadata_key');storage.sql.exec('DELETE FROM rooms WHERE key = ?',key);},
   async setJSON(key,data,{onlyIfNew,onlyIfMatch}={}){
-   if(!/^(rooms\/[A-Z0-9]{8}|globals\/\d{4}-\d{2}-\d{2}|accounts\/[a-z0-9_-]{3,24}|members\/[a-f0-9]{64}|sessions\/[a-f0-9]{64}|auth-attempts\/[a-f0-9]{64}|(google|line)-(challenges|identities)\/[a-f0-9]{64}|push-(preferences|subscriptions|events|deliveries)\/[a-f0-9]{64})$/.test(key))throw Error('metadata_key');
+   if(!/^(rooms\/[A-Z0-9]{8}|globals\/\d{4}-\d{2}-\d{2}|accounts\/[a-z0-9_-]{3,24}|members\/[a-f0-9]{64}|sessions\/[a-f0-9]{64}|auth-attempts\/[a-f0-9]{64}|(google|line|whatsapp)-(challenges|identities)\/[a-f0-9]{64}|push-(preferences|subscriptions|events|deliveries)\/[a-f0-9]{64})$/.test(key))throw Error('metadata_key');
    return storage.transactionSync(()=>{
     const read=key=>{const value=storage.sql.exec('SELECT data FROM rooms WHERE key = ?',key).toArray()[0];return value?JSON.parse(value.data):undefined;};
     if(!metadataWriteAllowed(key,data,read))return {modified:false};

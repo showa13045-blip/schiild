@@ -3,6 +3,7 @@ import {createHash,randomBytes,timingSafeEqual} from 'node:crypto';
 import {ApiError} from './atelier-core.mjs';
 import {googleVerifier,validGoogleClient} from './google-identity.mjs';
 import {lineAccounts} from './line-accounts.mjs';
+import {whatsappAccounts} from './whatsapp-accounts.mjs';
 import {prepareOriginalDeletion} from './delete-originals.mjs';
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const fail=(status,code)=>{throw new ApiError(status,code);};
@@ -18,7 +19,7 @@ export async function listRecords(store,prefix){
  const rows=await Promise.all((listing.blobs??[]).map(async blob=>({key:blob.key,...await store.getWithMetadata(blob.key,{type:'json'})})));
  return rows;
 }
-export function accounts(store,{now=()=>Date.now(),googleClientId='',verifyGoogle=googleVerifier(googleClientId,{now}),lineConfig=null,verifyLine,requireLine=false,lineAudit,images}={}){
+export function accounts(store,{now=()=>Date.now(),googleClientId='',verifyGoogle=googleVerifier(googleClientId,{now}),lineConfig=null,verifyLine,whatsappConfig=null,requireLine=false,lineAudit,images}={}){
  async function identity(credential){
   if(!/^[a-f0-9]{64}$/.test(credential??''))fail(401,'unauthorized');
   const member=hash(credential),session=await store.getWithMetadata(`sessions/${member}`,{type:'json'});
@@ -36,7 +37,7 @@ export function accounts(store,{now=()=>Date.now(),googleClientId='',verifyGoogl
  }
  async function profile(account){
   const rooms=(await listRecords(store,'rooms/')).map(row=>row.data).filter(room=>room.members.includes(account.member));
-  return {username:account.username,name:account.name,since:account.since,googleEmail:account.googleEmail,...(account.lineSubject?{lineLinked:true,hasPassword:Boolean(account.passwordHash)}:{}),canDelete:Boolean(account.passwordHash||account.lineSubject),ateliers:rooms.map(room=>({code:room.code,name:room.name,capacity:room.capacity,canGenerate:room.creator===account.member})),custody:rooms.flatMap(room=>Object.values(room.days).filter(day=>day.status==='ready'&&day.custodian===account.member).map(day=>({code:room.code,name:room.name,day:day.day,index:day.index})))};
+  return {username:account.username,name:account.name,since:account.since,googleEmail:account.googleEmail,...(account.lineSubject?{lineLinked:true,hasPassword:Boolean(account.passwordHash)}:{}),...(account.whatsappSubject?{whatsappLinked:true,hasPassword:Boolean(account.passwordHash)}:{}),canDelete:Boolean(account.passwordHash||account.lineSubject||account.whatsappSubject),ateliers:rooms.map(room=>({code:room.code,name:room.name,capacity:room.capacity,canGenerate:room.creator===account.member})),custody:rooms.flatMap(room=>Object.values(room.days).filter(day=>day.status==='ready'&&day.custodian===account.member).map(day=>({code:room.code,name:room.name,day:day.day,index:day.index})))};
  }
  async function session(account){
   const token=randomBytes(32).toString('hex');
@@ -44,7 +45,9 @@ export function accounts(store,{now=()=>Date.now(),googleClientId='',verifyGoogl
   return {token,account:await profile(account)};
  }
  const line=lineAccounts(store,{config:lineConfig,now,identity,session,verify:verifyLine,audit:lineAudit,purgePhotos:requireLine,images});
+ const whatsapp=whatsappAccounts(store,{config:whatsappConfig,now,identity,session,purgePhotos:requireLine,images});
  async function execute(body,credential){
+  if(typeof body.action==='string'&&body.action.startsWith('account.whatsapp.'))return whatsapp.execute(body,credential);
   if(typeof body.action==='string'&&body.action.startsWith('account.line'))return line(body,credential);
   // Live adapters require LINE. The opt-out exists only for legacy core test fixtures.
   if(requireLine){
@@ -116,7 +119,7 @@ export function accounts(store,{now=()=>Date.now(),googleClientId='',verifyGoogl
    return session(row.data);
   }
   const actor=await identity(credential);
-  if(body.action==='account.me')return {account:actor.account&&(!requireLine||actor.account.lineSubject)?await profile(actor.account):null};
+  if(body.action==='account.me')return {account:actor.account&&(!requireLine||actor.account.lineSubject||actor.account.whatsappSubject)?await profile(actor.account):null};
   if(!actor.account)fail(401,'unauthorized');
   if(body.action==='account.logout'){await store.setJSON(actor.sessionKey,{username:actor.account.username,expires:0,revoked:true});return {done:true};}
   if(body.action==='account.delete'){
@@ -140,7 +143,7 @@ export function accounts(store,{now=()=>Date.now(),googleClientId='',verifyGoogl
    return {done:true};
   }
   if(body.action==='account.update'){
-   if(requireLine&&!actor.account.lineSubject)fail(403,'line_required');
+   if(requireLine&&!actor.account.lineSubject&&!actor.account.whatsappSubject)fail(403,'line_required');
    if(typeof body.name!=='string'||!body.name.trim()||body.name.length>40)fail(400,'account_invalid');
    for(let n=0;n<20;n++){
     const row=await store.getWithMetadata(accountKey(actor.account.username),{type:'json'});
@@ -152,5 +155,5 @@ export function accounts(store,{now=()=>Date.now(),googleClientId='',verifyGoogl
   }
   fail(400,'invalid');
  }
- return {identity,execute};
+ return {identity,execute,receiveWhatsApp:whatsapp.receive};
 }

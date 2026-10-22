@@ -29,6 +29,7 @@ import GlobalPage from './GlobalPage';
 import type {GlobalSelection} from './GlobalPage';
 import AccountPage,{SettingsPage} from './AccountPage';
 import AuthPage from './AuthPage';
+import type {WhatsAppResult} from './WhatsAppSignIn';
 import ArchiveCalendar from './ArchiveCalendar';
 import {resetBrowser} from './browser-reset';
 import DailyPostsPage from './DailyPostsPage';
@@ -56,7 +57,7 @@ export default function AtelierApp(){
  const [collection,setCollection]=useState<Collection|null>(null),[view,setView]=useState('experience'),[name,setName]=useState(''),[capacity,setCapacity]=useState(12),[input,setInput]=useState(''),[invitation,setInvitation]=useState<Invitation|null>(null),[sharing,setSharing]=useState<Atelier|null>(null),[deleting,setDeleting]=useState<string|null>(null),[message,setMessage]=useState(''),[busy,setBusy]=useState(false);
  const lock=useRef(false),accountSequence=useRef(0);
  const [navigation,setNavigation]=useState<Navigation>({screen:'home',revision:0}),[globalSelection,setGlobalSelection]=useState<GlobalSelection>({day:demoDay()}),[account,setAccount]=useState<Account|null>(null),[accountRevision,setAccountRevision]=useState(0),[settings,setSettings]=useState(preferences);
- const participant=isWeekPreview||Boolean(account?.lineLinked);
+ const participant=isWeekPreview||Boolean(account?.lineLinked||account?.whatsappLinked);
  useEffect(()=>{const required=()=>{accountSequence.current++;setAccount(null);setView('auth');};window.addEventListener('schiild:line-required',required);return()=>window.removeEventListener('schiild:line-required',required);},[]);
  useEffect(()=>{const removed=()=>finishDeletion();window.addEventListener('schiild:account-deleted',removed);return()=>window.removeEventListener('schiild:account-deleted',removed);},[]);
  useEffect(()=>{const expired=()=>{accountSequence.current++;clearSession();setAccount(null);setAccountRevision(value=>value+1);setCollection(current=>current?{...current,ateliers:current.ateliers.filter(entry=>!entry.online),selected:current.ateliers.find(entry=>!entry.online)?.code??''}:current);setView('auth');};window.addEventListener('schiild:session-expired',expired);return()=>window.removeEventListener('schiild:session-expired',expired);},[]);
@@ -145,6 +146,11 @@ export default function AtelierApp(){
   else if(isWeekPreview&&profile.ateliers.length)next.selected=profile.ateliers[0].code;
   return next;
  });}
+ function acceptWhatsApp(result:WhatsAppResult){
+  accountSequence.current++;if('deleted' in result){finishDeletion();return;}
+  saveSession(result.token);setAccount(result.account);restoreMembership(result.account);setAccountRevision(value=>value+1);setMessage('');
+  const destination=takeAuthDestination();if(destination){setInput(destination.code);setInvitation(null);setView(destination.view);}else setView('me');
+ }
  async function updateName(name:string){const request=accountSequence.current,session=currentSession(),result=await sharedRequest<{account:Account}>('account.update',{name});if(request===accountSequence.current&&session===currentSession())setAccount(result.account);}
  function changeLanguage(value:Language){try{saveLanguage(value);if(isWeekPreview){setAccount(current=>current?localizeWeekData(current,value):current);setCollection(current=>current?localizeWeekData(current,value):current);setSharing(current=>current?localizeWeekData(current,value):current);setInvitation(current=>current?localizeWeekData(current,value):current);}setLanguage(value);setMessage('');}catch{setMessage(t('error.server.title'));}}
  function updateSettings(value:Preferences){try{savePreferences(value);setSettings(value);}catch{setMessage(t('error.server.title'));}}
@@ -193,9 +199,9 @@ export default function AtelierApp(){
   {view==='discover'&&<DiscoverPage joined={visibleAteliers.map(entry=>entry.code)} onCode={code=>{setInput(code);setInvitation(null);go('join');}} onChoose={chooseDiscovered}/>}
   {view==='public-atelier'&&<PublicAtelierPage key={publicCode} code={publicCode} onJoin={()=>{setInput(publicCode);setInvitation(null);if(!participant){rememberAuthDestination('join',publicCode);go('auth');}else go('join');}}/>}
   {view==='posts'&&<DailyPostsPage collection={collection} initialSource={postSelection} onLocalReuse={reuseLocalPosts} onRefresh={()=>setAccountRevision(value=>value+1)} onBack={()=>visit('home')}/>}
-  {view==='delete-account'&&account&&<DeleteAccountPage account={account} onDelete={deleteAccount}/>}
+  {view==='delete-account'&&account&&<DeleteAccountPage account={account} onDelete={deleteAccount} onWhatsAppComplete={acceptWhatsApp}/>}
   {view==='global'&&<GlobalPage selection={globalSelection} revision={accountRevision}/>}
-  {view==='auth'&&<AuthPage language={language} onLanguage={changeLanguage}/>}{view==='account-check'&&<p>{t('common.loading')}</p>}{view==='empty-archive'&&<ArchiveCalendar items={[]} currentDay={demoDay()} onOpen={()=>{}} onGlobal={item=>showGlobal(item.day)}/>}
+  {view==='auth'&&<AuthPage language={language} onLanguage={changeLanguage} onComplete={acceptWhatsApp}/>}{view==='account-check'&&<p>{t('common.loading')}</p>}{view==='empty-archive'&&<ArchiveCalendar items={[]} currentDay={demoDay()} onOpen={()=>{}} onGlobal={item=>showGlobal(item.day)}/>}
   {view==='me'&&account&&<AccountPage key={account.username} account={account} collection={collection} onPosts={()=>showPosts()} onName={updateName} onArchive={()=>visit('archive')} onSettings={()=>go('settings')} onCustody={(code,day)=>{setCollection({...collection,selected:code});setNavigation(previous=>({screen:'home',openDay:day,revision:previous.revision+1}));go('experience');}}/>}
   {view==='settings'&&account&&<SettingsPage language={language} onLanguage={changeLanguage} value={settings} onChange={updateSettings} account={account} onAccount={()=>void openAccount()} onLogout={logout} onDelete={()=>go('delete-account')}/>}
   {(view==='list'||view==='experience')&&<section className="atelier-home"><h1>{t('home.title')}</h1><div className="atelier-list">{visibleAteliers.map(a=><div className="atelier-row" key={a.code} data-selected={a.code===collection.selected} data-code={a.code}><button className="atelier-select" disabled={busy} onClick={()=>{setCollection({...collection,selected:a.code});setNavigation(previous=>({screen:'home',revision:previous.revision+1}));go('experience');}}><span className="atelier-name"><AtelierNameLabel/><strong>{a.name}</strong></span><span className="mono">{a.online?t('create.capacity_label'):t('demo.shared.local')} {a.capacity}</span></button><div className="atelier-actions"><button disabled={busy} onClick={()=>{if(a.online){setSharing(a);go('share');}else void create(a);}}>{t('created.share')}</button><button disabled={busy||isWeekPreview} onClick={()=>void leave(a)}>{t('demo.atelier.leave')}</button>{a.creator===collection.device&&!a.online&&<button onClick={()=>setDeleting(a.code)}>{t('demo.atelier.delete')}</button>}</div></div>)}</div>{!visibleAteliers.length&&<p>{t('empty.atelier.body')}</p>}<button className="button" disabled={busy||isWeekPreview} onClick={()=>{setName('');setConcept('');setVisibility('private');setCapacity(12);go('create');}}>{t('create.title')}</button><button className="button secondary" disabled={busy} onClick={()=>go('discover')}>{t('demo.discover.join_public')}</button>{!isWeekPreview&&<a className="week-entry" href="/week/">{t('demo.week.entry')}</a>}{visibleAteliers.length>0&&<HelpDetails><p>{t('demo.atelier.leave_note')}</p><p>{t('demo.atelier.leave_creator')}</p><p>{t('demo.atelier.leave_slots')}</p></HelpDetails>}</section>}

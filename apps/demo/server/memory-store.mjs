@@ -29,8 +29,18 @@ export function memoryStore({notificationEvents=false,now=()=>Date.now()}={}){
    for(const [key,data] of [[accountKey,updated],[memberKey,{username:account.username}],[lineKey,{username:account.username}]])values.set(key,{data:structuredClone(data),etag:String(++revision),metadata:{}});
    return {modified:true,account:structuredClone(updated)};
   },
+  async registerWhatsApp(account){
+   const whatsappKey=`whatsapp-identities/${account.whatsappSubject}`,mapping=values.get(whatsappKey)?.data;
+   if(mapping)return {modified:false,reason:'whatsapp',username:mapping.username};
+   const memberKey=`members/${account.member}`,accountKey=`accounts/${account.username}`,linked=values.get(memberKey)?.data,current=values.get(accountKey)?.data;
+   if(linked?.deleted||linked&&linked.username!==account.username||current&&current.member!==account.member||current?.whatsappSubject&&current.whatsappSubject!==account.whatsappSubject)return {modified:false,reason:'member'};
+   const updated={...(current??account),whatsappSubject:account.whatsappSubject};
+   for(const [key,data] of [[accountKey,updated],[memberKey,{username:account.username}],[whatsappKey,{username:account.username}]])values.set(key,{data:structuredClone(data),etag:String(++revision),metadata:{}});
+   return {modified:true,account:structuredClone(updated)};
+  },
   async getWithMetadata(key){const value=values.get(key);return value?structuredClone(value):null;},
   async pruneLineChallenges(now){for(const [key,row] of values)if(key.startsWith('line-challenges/')&&row.data.expires<=now)values.delete(key);},
+  async pruneWhatsAppChallenges(now){for(const [key,row] of values)if(key.startsWith('whatsapp-challenges/')&&row.data.expires<=now)values.delete(key);},
   async deleteAccount(account,anonymousMember,attemptKeys,options={}){
    if(values.get(`accounts/${account.username}`)?.data.member!==account.member)return {modified:false};
    const {writes,deletes,photoKeys}=removalChanges([...values].map(([key,row])=>({key,data:row.data})),account,anonymousMember,attemptKeys,options);

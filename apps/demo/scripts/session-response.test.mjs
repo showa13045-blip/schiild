@@ -9,7 +9,7 @@ const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.
 function fixture(){
  const memory=()=>{const data=Object.create(null);return new Proxy(data,{get(target,key){if(key==='getItem')return key=>target[key]??null;if(key==='setItem')return (key,value)=>target[key]=String(value);if(key==='removeItem')return key=>delete target[key];return target[key];}});};
  const storage=memory(),session=memory(),events=[],exports={};let complete;storage.setItem('schiild.account.session.v2','a'.repeat(64));
- vm.runInNewContext(compiled,{exports,process:{env:{}},Event,Date,DOMException,window:{dispatchEvent:event=>events.push(event.type)},fetch:()=>new Promise(resolve=>complete=resolve),require(name){if(name==='./preview-mode.ts')return {isWeekPreview:false,browserStorage:()=>storage,browserSessionStorage:()=>session};if(name==='./account-storage.ts')return {clearAccountStores,ACCOUNT_ERASE_EVENT};if(name==='./copy')return {t:key=>key};throw Error('Unexpected module '+name);}});
+ vm.runInNewContext(compiled,{exports,process:{env:{}},Event,Date,DOMException,window:{dispatchEvent:event=>events.push(event.type)},fetch:()=>new Promise(resolve=>complete=resolve),require(name){if(name==='./preview-mode.ts')return {isWeekPreview:false,browserStorage:()=>storage,browserSessionStorage:()=>session};if(name==='./account-storage.ts')return {clearAccountStores,ACCOUNT_ERASE_EVENT};if(name==='./copy')return {t:key=>key};if(name==='./whatsapp-copy')return {w:key=>key,whatsappError:key=>key};throw Error('Unexpected module '+name);}});
  return {api:exports,events,storage,session,fail(error){complete({ok:false,json:async()=>({error})});},succeed(body){complete({ok:true,json:async()=>body});}};
 }
 test('a delayed deleted/expired response for an old session cannot erase a freshly signed-in account',async()=>{
@@ -40,6 +40,8 @@ test('another tab clears its own drafts without erasing the fresh guest credenti
  const f=fixture();f.session.setItem('schiild.old-name','private');
  const token=f.api.currentSession();assert.equal(f.api.clearAccountBrowser(false,false),true);assert.equal(f.api.currentSession(),token);assert.equal(f.session.getItem('schiild.old-name'),null);
 });
-test('public LINE availability remains usable after identity reset',async()=>{
- const f=fixture(),pending=f.api.sharedRequest('account.line.config');f.api.clearAccountBrowser(false);f.succeed({enabled:true});assert.equal((await pending).enabled,true);
+test('public provider availability remains usable after identity reset',async()=>{
+ for(const action of ['account.line.config','account.whatsapp.config']){
+  const f=fixture(),pending=f.api.sharedRequest(action);f.api.clearAccountBrowser(false);f.succeed({enabled:true});assert.equal((await pending).enabled,true);
+ }
 });

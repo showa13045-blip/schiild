@@ -22,7 +22,7 @@ export function removalChanges(rows,account,anonymousMember,attemptKeys,{purgePh
   }else if(key.startsWith('sessions/')&&data.username===account.username){
    // Keep only token revocation markers, without ID, member, email or display name.
    writes.push([key,{expires:0,revoked:true,deleted:true}]);
-  }else if(/^(google|line)-identities\//.test(key)&&data.username===account.username||/^(google|line)-challenges\//.test(key)&&data.member===account.member)deletes.push(key);
+  }else if(/^(google|line|whatsapp)-identities\//.test(key)&&data.username===account.username||/^(google|line|whatsapp)-challenges\//.test(key)&&data.member===account.member)deletes.push(key);
   else if(/^push-(preferences|subscriptions|deliveries)\//.test(key)&&data.member===account.member)deletes.push(key);
   else if(key.startsWith('push-events/')&&data.recipients?.includes(account.member))writes.push([key,{...data,recipients:data.recipients.filter(member=>member!==account.member)}]);
  }
@@ -37,7 +37,7 @@ export function metadataWriteAllowed(key,data,read){
  if(key.startsWith('globals/')&&Object.keys(data.pixels).some(deleted))return false;
  if(key.startsWith('accounts/')&&(deleted(data.member)||read(key)&&read(key).member!==data.member))return false;
  if(key.startsWith('members/')&&read(key)?.deleted&&!data.deleted)return false;
- if(key.startsWith('line-challenges/')&&deleted(data.member))return false;
+ if(/^(line|whatsapp)-challenges\//.test(key)&&deleted(data.member))return false;
  if(/^push-(preferences|subscriptions|deliveries)\//.test(key)&&deleted(data.member))return false;
  if(key.startsWith('sessions/')){if(read(key)?.deleted&&!data.deleted)return false;if(!data.revoked&&read(`accounts/${data.username}`)?.member!==data.member)return false;}
  return true;

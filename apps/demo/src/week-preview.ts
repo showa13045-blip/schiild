@@ -22,7 +22,7 @@ export async function weekRequest<T>(action:string,values:Record<string,unknown>
  const selected=new URLSearchParams(location.search).get('person')??'',person=snapshot.people.find(person=>person.username===selected)??snapshot.people[0],data=await load<Person>(person.file);
  const code=String(values.code??''),day=String(values.day??snapshot.lastDay);let result:unknown;
  if(action==='account.me')result={account:data.profile};
- else if(action==='account.line.config'||action==='account.google.start')result={enabled:false};
+ else if(action==='account.line.config'||action==='account.whatsapp.config'||action==='account.google.start')result={enabled:false};
  else if(action==='area')result=data.area;
  else if(action==='join'){
   const room=snapshot.allRooms.find(room=>room.code===code);if(!room)throw Error(t('join.error.not_found'));

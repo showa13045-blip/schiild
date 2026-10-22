@@ -410,3 +410,32 @@ error.image_too_large          この画像は大きすぎます。
 - [ ] `\n` を含む文言（`fail.title` `excluded.title`）は改行位置が意図通りか
 - [ ] 禁止語リスト（§0）を lint で機械的に検出できるようにすること
 - [ ] 感嘆符が1つも含まれていないことを確認すること
+
+
+## WhatsApp receive-only authentication (2026-10-22)
+
+These new messages live in `apps/demo/src/whatsapp-copy.ts`. Japanese and English are provided; English is the explicit fallback for other interface languages.
+
+| Key | Japanese | English |
+|---|---|---|
+| `whatsapp.login` | WhatsAppでログイン | Sign in with WhatsApp |
+| `whatsapp.register` | WhatsAppで新規登録 | Sign up with WhatsApp |
+| `whatsapp.open` | WhatsAppを開いて送信 | Open WhatsApp and send |
+| `whatsapp.note` | 入力済みの確認メッセージを送信して、この画面に戻ってください。自分で始めた操作のメッセージだけを送信してください。 | Send the pre-filled verification message, then return here. Only send messages for actions you started yourself. |
+| `whatsapp.waiting` | 送信を待っています。この画面からWhatsAppへの返信は送りません。 | Waiting for your message. No WhatsApp reply will be sent. |
+| `whatsapp.check` | 送信を確認 | Check my message |
+| `whatsapp.received` | 送信元を確認しました：{hint} | Sender verified: {hint} |
+| `whatsapp.finish` | このアカウントで続ける | Continue with this account |
+| `whatsapp.delete` | WhatsAppで削除を認証 | Verify deletion with WhatsApp |
+| `whatsapp.deleteNote` | 確定後、WhatsAppで確認メッセージを送信し、この画面で削除を完了します。 | After confirming, send a verification message in WhatsApp and finish deleting your account here. |
+| `whatsapp.linked` | WhatsApp連携済み | WhatsApp linked |
+| `whatsapp.expired` | 確認の有効期限が切れました。最初からやり直してください。 | Verification expired. Please start again. |
+| `whatsapp.unavailable` | WhatsAppで確認できません。時間をおいて、もう一度お試しください。 | WhatsApp verification is unavailable. Please try again later. |
+| `whatsapp.pending` | 確認メッセージはまだ届いていません。WhatsAppで送信してから確認してください。 | Your verification message has not arrived yet. Send it in WhatsApp, then check again. |
+| `whatsapp.notRegistered` | このWhatsAppアカウントは登録されていません。新規登録してください。 | This WhatsApp account is not registered. Please sign up. |
+| `whatsapp.registered` | このWhatsAppアカウントは登録済みです。ログインしてください。 | This WhatsApp account is already registered. Please sign in. |
+| `whatsapp.invalid` | WhatsAppで本人確認できませんでした。最初からやり直してください。 | WhatsApp verification failed. Please start again. |
+| `whatsapp.conflict` | このWhatsAppアカウントでは連携できません。 | This WhatsApp account cannot be linked. |
+| `whatsapp.limited` | 現在、WhatsAppでの確認を受け付けていません。時間をおいてお試しください。 | WhatsApp verification has reached its current limit. Please try again later. |
+| `whatsapp.restart` | 最初からやり直す | Start again |
+| `whatsapp.authRequired` | 参加するにはログインしてください。 | Sign in to take part. |

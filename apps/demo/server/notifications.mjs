@@ -39,11 +39,11 @@ export function notificationService(store,{config,images,now=()=>Date.now(),send
  async function live(sub){
   const session=(await read(store,sub.sessionKey))?.data;
   if(!session||session.revoked||session.deleted||session.expires<=now()||session.member!==sub.member)return false;
-  const account=(await read(store,`accounts/${session.username}`))?.data;return account?.member===sub.member&&(!requireLine||Boolean(account.lineSubject));
+  const account=(await read(store,`accounts/${session.username}`))?.data;return account?.member===sub.member&&(!requireLine||Boolean(account.lineSubject||account.whatsappSubject));
  }
  async function execute(body,actor){
   if(!actor.account||!actor.sessionKey)fail(401,'unauthorized');
-  if(requireLine&&!actor.account.lineSubject)fail(403,'line_required');
+  if(requireLine&&!actor.account.lineSubject&&!actor.account.whatsappSubject)fail(403,'line_required');
   if(body.action==='push.config')return {enabled:Boolean(config),publicKey:config?.publicKey??null,preferences:(await preference(actor.member)).preferences};
   if(body.action==='push.preferences'){
    if(!body.preferences||kinds.some(kind=>typeof body.preferences[kind]!=='boolean'))fail(400,'push_invalid');

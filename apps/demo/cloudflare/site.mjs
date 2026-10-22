@@ -1,9 +1,11 @@
 // DEMO ONLY. Static UI and API share the same Cloudflare Worker and origin.
 import {gateway} from './gateway.mjs';
 import {imageMigration} from './image-migration.mjs';
+import {whatsappWebhook} from './whatsapp-webhook.mjs';
 export async function siteRequest(request,env){
  const url=new URL(request.url);
  if(url.hostname==='www.schiild.app'){url.hostname='schiild.app';url.protocol='https:';return Response.redirect(url.href,308);}
+ if(url.pathname==='/api/auth/whatsapp')return whatsappWebhook(request,env);
  if(url.pathname==='/api/migration/images')return imageMigration(request,env);
  if(url.pathname==='/api/atelier'||!env.ASSETS)return gateway(request,env);
  if(!['GET','HEAD'].includes(request.method))return new Response('Method not allowed',{status:405,headers:{Allow:'GET, HEAD'}});

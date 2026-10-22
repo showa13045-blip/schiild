@@ -10,6 +10,7 @@ import {accounts} from '../server/accounts.mjs';
 import {actorForAction} from '../server/access-policy.mjs';
 import {validGoogleClient} from '../server/google-identity.mjs';
 import {readLineConfig,validLineConfig} from '../server/line-identity.mjs';
+import {readWhatsAppConfig} from '../server/whatsapp-accounts.mjs';
 import {notificationService,readPushConfig} from '../server/notifications.mjs';
 export class AtelierDirectory extends DurableObject {
  constructor(ctx,env){
@@ -29,15 +30,20 @@ export class AtelierDirectory extends DurableObject {
   try{const {push}=this.services();try{await push.finalizeGlobal();}finally{const next=await push.drain();if(next){const current=await this.storage.getAlarm();if(!current||current>next)await this.storage.setAlarm(next);}}}finally{this.draining=false;}
  }
  async alarm(){await this.tick();}
+ async receiveWhatsApp(payload){
+  const {store}=this.services();
+  const auth=accounts(store,{requireLine:true,whatsappConfig:readWhatsAppConfig(this.env.WHATSAPP_LOGIN_CONFIG)});
+  return auth.receiveWhatsApp(payload);
+ }
  async fetch(request){
   try{
    let body;try{body=await request.json();}catch{throw new ApiError(400,'invalid');}
    if(!body||typeof body!=='object'||Array.isArray(body))throw new ApiError(400,'invalid');
-   const {store,push}=this.services(),lineConfig=readLineConfig(this.env.LINE_LOGIN_CONFIG),auth=accounts(store,{requireLine:true,images:workerImages,googleClientId:this.env.GOOGLE_CLIENT_ID,lineConfig}),credential=request.headers.get('authorization')?.replace(/^Bearer /,'');
+   const {store,push}=this.services(),lineConfig=readLineConfig(this.env.LINE_LOGIN_CONFIG),auth=accounts(store,{requireLine:true,images:workerImages,googleClientId:this.env.GOOGLE_CLIENT_ID,lineConfig,whatsappConfig:readWhatsAppConfig(this.env.WHATSAPP_LOGIN_CONFIG)}),credential=request.headers.get('authorization')?.replace(/^Bearer /,'');
    let result;
    if(typeof body.action==='string'&&body.action.startsWith('account.')){
     // Disabled feature discovery must not consume password-login/deletion attempts.
-    const authAttempt=['account.login','account.register','account.google','account.delete','account.line'].includes(body.action)||body.action==='account.google.start'&&validGoogleClient(this.env.GOOGLE_CLIENT_ID)||body.action==='account.line.start'&&validLineConfig(lineConfig);
+    const authAttempt=['account.login','account.register','account.google','account.delete','account.line','account.whatsapp.start','account.whatsapp.complete'].includes(body.action)||body.action==='account.google.start'&&validGoogleClient(this.env.GOOGLE_CLIENT_ID)||body.action==='account.line.start'&&validLineConfig(lineConfig);
     if(authAttempt&&this.env.AUTH_RATE_LIMITER&&!((await this.env.AUTH_RATE_LIMITER.limit({key:request.headers.get('X-Demo-IP')??'local'})).success))throw new ApiError(429,'login_limited');
     result=await auth.execute(body,credential);
    }else{
