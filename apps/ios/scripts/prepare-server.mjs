@@ -17,7 +17,8 @@ if(!files['index.html']||!Object.values(files).some(text=>text.includes('account
 files['index.html']=files['index.html'].replaceAll('/_expo/','/__ios/_expo/');
 await writeFile(path.join(stage,'ios-web-files.mjs'),'export default '+JSON.stringify(files)+';\n');
 await copyFile(new URL('../server/native-ui.mjs',import.meta.url),path.join(stage,'native-ui.mjs'));
-await writeFile(path.join(stage,'apple-entry.mjs'),'import app from "./ios-entry.mjs";\nimport {nativeUI} from "./native-ui.mjs";\nimport files from "./ios-web-files.mjs";\nexport * from "./ios-entry.mjs";\nexport default {...app,fetch(request,env,ctx){return nativeUI(request,files)??app.fetch(request,env,ctx);}};\n');
+for(const name of ['support-pages.mjs','support-surface.mjs'])await copyFile(new URL('../server/'+name,import.meta.url),path.join(stage,name));
+await writeFile(path.join(stage,'apple-entry.mjs'),'import app from "./ios-entry.mjs";\nimport {nativeUI} from "./native-ui.mjs";\nimport files from "./ios-web-files.mjs";\nimport {supportPages} from "./support-pages.mjs";\nimport {supportSurface} from "./support-surface.mjs";\nexport * from "./ios-entry.mjs";\nexport default {...app,fetch(request,env,ctx){return supportSurface(request,value=>Promise.resolve(nativeUI(value,files)??app.fetch(value,env,ctx)),{pages:supportPages,scripts:{}});}};\n');
 // A single runtime module also allows the same exact code to run in local workerd.
 if(process.argv[4]){
  await copyFile(process.argv[4],path.join(stage,'ios-entry.mjs'));

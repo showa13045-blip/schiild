@@ -73,6 +73,16 @@ Node による結果を workerd の成功と扱わないでください。
 
 ## 配布前の残る確認
 
+公開準備の実績と未完了項目は [APP-STORE-READINESS.md](./APP-STORE-READINESS.md)、
+審査用の説明は [REVIEW-NOTES.md](./REVIEW-NOTES.md) に記録します。EUは配信対象外、
+承認後は手動公開です。プライバシーの下書き保存を一般公開・審査提出の完了とは扱いません。
+
+サポート・プライバシー本文の情報源は `server/support-pages.mjs` です。静的Webの
+書き出し前に `node apps/ios/scripts/sync-support-pages.mjs` で `apps/demo/public/` も同期します。
+`prepare-server.mjs` はこの2ページを既存のAPI・画像と分けて配信します。
+既存の公開UIへリンクだけを追加する場合は `patch-support-links.mjs` の照合を通し、
+Web・iOS両方のJavaScriptとHTMLのキャッシュ更新を確認します。照合失敗時は上書きしません。
+
 署名済み IPA や TestFlight への送信成功だけでは、一般公開の審査通過を保証しません。
 実機のカメラ・LINE / Apple / WhatsApp 認証・削除・共有を確認してください。
 ネイティブのプッシュ通知はまだ実装していません。Web Push の動作を iOS ネイティブの
