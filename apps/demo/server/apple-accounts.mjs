@@ -24,7 +24,7 @@ export function appleAccounts(store,{config,now=()=>Date.now(),identity,session,
   const key='apple-challenges/'+hash(body.state),row=await store.getWithMetadata(key,{type:'json'}),challenge=row?.data;
   if(!challenge||challenge.used||challenge.expires<=now()||challenge.member!==actor.member||challenge.username!==(actor.account?.username??null)||challenge.credentialHash!==hash(credential))fail(401,'apple_expired');
   if(!(await store.setJSON(key,{...challenge,used:true},{onlyIfMatch:row.etag})).modified)fail(401,'apple_expired');
-  let verified;try{verified=await verify.authorize({identityToken:body.identityToken,code:body.code,nonce:challenge.nonce,createdAt:challenge.createdAt});}catch{fail(401,'apple_invalid');}
+  let verified;try{verified=await verify.authorize({identityToken:body.identityToken,code:body.code,nonce:challenge.nonce,createdAt:challenge.createdAt});}catch(error){fail(401,/^apple_invalid_a0[1-9]$/.test(error?.code??'')?error.code:'apple_invalid');}
   const current=await identity(credential);
   if(challenge.expires<=now()||current.member!==actor.member||current.account?.username!==actor.account?.username)fail(401,'apple_expired');
   if(challenge.intent==='delete'){

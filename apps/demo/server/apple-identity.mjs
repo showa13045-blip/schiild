@@ -3,6 +3,8 @@ import {createHash,randomBytes,createCipheriv,createDecipheriv} from 'node:crypt
 import {createRemoteJWKSet,importPKCS8,SignJWT,jwtVerify} from 'jose';
 const issuer='https://appleid.apple.com',clientId='app.schiild.mobile';
 const keys=createRemoteJWKSet(new URL(issuer+'/auth/keys'),{timeoutDuration:10000,cooldownDuration:30000});
+// Bounded diagnostic categories only. Never return Apple responses, claims or tokens.
+function invalid(stage){const error=new Error('apple_invalid_'+stage);error.code=error.message;return error;}
 export const appleDigest=value=>createHash('sha256').update(value).digest('hex');
 export function readAppleConfig(value){
  try{const config=JSON.parse(value);return config.clientId===clientId&&/^[A-Z0-9]{10}$/.test(config.teamId)&&/^[A-Z0-9]{10}$/.test(config.keyId)&&/^[a-f0-9]{64}$/.test(config.encryptionKey)&&config.privateKey?.includes('BEGIN PRIVATE KEY')?config:null;}catch{return null;}
@@ -19,17 +21,25 @@ export function openAppleToken(value,config,subject){
 }
 export function appleIdentity(config,{fetcher=fetch,now=()=>Date.now(),jwks=keys}={}){
  async function clientSecret(){const time=Math.floor(now()/1000);return new SignJWT({}).setProtectedHeader({alg:'ES256',kid:config.keyId}).setIssuer(config.teamId).setSubject(clientId).setAudience(issuer).setIssuedAt(time).setExpirationTime(time+300).sign(await importPKCS8(config.privateKey,'ES256'));}
- async function post(endpoint,values){const response=await fetcher(issuer+endpoint,{method:'POST',redirect:'error',signal:AbortSignal.timeout(15000),headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:clientId,client_secret:await clientSecret(),...values})});if(!response.ok)throw Error('apple_invalid');return response;}
- async function verify(token,nonce,createdAt){
-  const {payload}=await jwtVerify(token,jwks,{issuer,audience:clientId,algorithms:['RS256'],requiredClaims:['sub','nonce','exp','iat'],maxTokenAge:300,clockTolerance:5,currentDate:new Date(now())});
-  if(typeof payload.sub!=='string'||!payload.sub||payload.sub.length>255||payload.nonce!==nonce||payload.iat*1000<createdAt-5000)throw Error('apple_invalid');
+ async function post(endpoint,values){
+  let secret;try{secret=await clientSecret();}catch{throw invalid('a03');}
+  // Workers rejects Fetch's "error" redirect mode before sending the request.
+  // Manual mode returns 3xx to the !ok check below without forwarding credentials.
+  let response;try{response=await fetcher(issuer+endpoint,{method:'POST',redirect:'manual',signal:AbortSignal.timeout(15000),headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:clientId,client_secret:secret,...values})});}catch{throw invalid('a06');}
+  if(!response.ok){let reason;try{reason=(await response.json()).error;}catch{}throw invalid(reason==='invalid_client'?'a04':reason==='invalid_grant'?'a05':'a06');}return response;
+ }
+ async function verify(token,nonce,createdAt,stage){
+  let payload;try{({payload}=await jwtVerify(token,jwks,{issuer,audience:clientId,algorithms:['RS256'],requiredClaims:['sub','nonce','exp','iat'],maxTokenAge:300,clockTolerance:5,currentDate:new Date(now())}));}catch{throw invalid(stage);}
+  if(typeof payload.sub!=='string'||!payload.sub||payload.sub.length>255||payload.iat*1000<createdAt-5000)throw invalid(stage);
+  if(payload.nonce!==nonce)throw invalid(stage==='a01'?'a02':stage);
   return payload;
  }
  return {
   async authorize({identityToken,code,nonce,createdAt}){
-   const native=await verify(identityToken,nonce,createdAt),response=await post('/auth/token',{grant_type:'authorization_code',code}),grant=await response.json();
-   if(typeof grant.id_token!=='string'||typeof grant.refresh_token!=='string'||grant.refresh_token.length>8192)throw Error('apple_invalid');
-   const validated=await verify(grant.id_token,nonce,createdAt);if(native.sub!==validated.sub)throw Error('apple_invalid');
+   const native=await verify(identityToken,nonce,createdAt,'a01'),response=await post('/auth/token',{grant_type:'authorization_code',code});
+   let grant;try{grant=await response.json();}catch{throw invalid('a07');}
+   if(typeof grant?.id_token!=='string'||typeof grant.refresh_token!=='string'||grant.refresh_token.length>8192)throw invalid('a07');
+   const validated=await verify(grant.id_token,nonce,createdAt,'a08');if(native.sub!==validated.sub)throw invalid('a09');
    return {subject:appleDigest(clientId+'/'+validated.sub),refreshToken:grant.refresh_token};
   },
   async revoke(token){await post('/auth/revoke',{token,token_type_hint:'refresh_token'});}

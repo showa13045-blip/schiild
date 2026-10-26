@@ -16,19 +16,38 @@ test('Apple verifies signature, audience, nonce and exchanged subject, not clien
  const good=await token();let exchanged=good,calls=0;
  const provider=appleIdentity(config,{now:()=>now,jwks:createLocalJWKSet({keys:[jwk]}),fetcher:async(url,options)=>{calls++;assert.equal(url,'https://appleid.apple.com/auth/token');assert.equal(options.body.get('client_id'),config.clientId);return Response.json({id_token:exchanged,refresh_token:'refresh-test'});}});
  assert.equal((await provider.authorize({identityToken:good,code:'code',nonce,createdAt:now})).subject,appleDigest(config.clientId+'/subject'));
- await assert.rejects(provider.authorize({identityToken:await token('subject','wrong-app'),code:'code',nonce,createdAt:now}));assert.equal(calls,1);
- await assert.rejects(provider.authorize({identityToken:good,code:'code',nonce:'wrong',createdAt:now}));
- exchanged=await token('other-user');await assert.rejects(provider.authorize({identityToken:good,code:'code',nonce,createdAt:now}));
+ await assert.rejects(provider.authorize({identityToken:await token('subject','wrong-app'),code:'code',nonce,createdAt:now}),{code:'apple_invalid_a01'});assert.equal(calls,1);
+ await assert.rejects(provider.authorize({identityToken:good,code:'code',nonce:'wrong',createdAt:now}),{code:'apple_invalid_a02'});
+ exchanged=await token('other-user');await assert.rejects(provider.authorize({identityToken:good,code:'code',nonce,createdAt:now}),{code:'apple_invalid_a09'});
+ exchanged=await token('subject',config.clientId,'wrong-nonce');await assert.rejects(provider.authorize({identityToken:good,code:'code',nonce,createdAt:now}),{code:'apple_invalid_a08'});
 });
-function scenario(){
+test('Apple exchange failures expose bounded categories without the response or credential',async()=>{
+ const signing=await generateKeyPair('RS256'),client=await generateKeyPair('ES256',{extractable:true}),jwk=await exportJWK(signing.publicKey),now=Date.now(),nonce='a'.repeat(64);jwk.kid='test';
+ const config={...secret,privateKey:await exportPKCS8(client.privateKey)},proof=await new SignJWT({nonce}).setProtectedHeader({alg:'RS256',kid:'test'}).setIssuer('https://appleid.apple.com').setAudience(config.clientId).setSubject('subject').setIssuedAt(Math.floor(now/1000)).setExpirationTime(Math.floor(now/1000)+300).sign(signing.privateKey);
+ const cases=[['invalid_client','a04'],['invalid_grant','a05'],['private-server-message','a06'],[null,'a07']];
+ for(const [reason,stage] of cases){
+  const provider=appleIdentity(config,{now:()=>now,jwks:createLocalJWKSet({keys:[jwk]}),fetcher:async()=>reason?Response.json({error:reason,privateDetail:'must-not-escape'},{status:400}):Response.json({id_token:proof})});
+  await assert.rejects(provider.authorize({identityToken:proof,code:'private-code',nonce,createdAt:now}),error=>error.code==='apple_invalid_'+stage&&error.message===error.code);
+ }
+});
+test('Apple token exchange and revocation use Workers-supported manual redirects and never follow a redirect',async()=>{
+ const client=await generateKeyPair('ES256',{extractable:true}),config={...secret,privateKey:await exportPKCS8(client.privateKey)};let calls=0;
+ const provider=appleIdentity(config,{fetcher:async(url,options)=>{
+  calls++;assert.equal(url,'https://appleid.apple.com/auth/revoke');assert.equal(options.redirect,'manual');
+  assert.equal(options.method,'POST');assert.equal(options.headers['Content-Type'],'application/x-www-form-urlencoded');assert.equal(options.body.get('token'),'test-refresh');
+  return new Response(null,{status:307,headers:{Location:'https://untrusted.invalid/collect'}});
+ }});
+ await assert.rejects(provider.revoke('test-refresh'),{code:'apple_invalid_a06'});assert.equal(calls,1);
+});
+function scenario(authorize=async()=>({subject:'b'.repeat(64),refreshToken:'grant'})){
  let revision=0,clock=Date.now(),account=null;const records=new Map(),calls=[];
- const credential='1'.repeat(64),subject='b'.repeat(64),store={
+ const credential='1'.repeat(64),store={
   async getWithMetadata(key){return structuredClone(records.get(key));},
   async setJSON(key,data,{onlyIfNew,onlyIfMatch}={}){const row=records.get(key);if(onlyIfNew&&row||onlyIfMatch&&row?.etag!==onlyIfMatch)return {modified:false};records.set(key,{data:structuredClone(data),etag:String(++revision)});return {modified:true};},
   async registerApple(value){if(records.has('apple-identities/'+value.appleSubject))return {modified:false};await store.setJSON('apple-identities/'+value.appleSubject,{username:value.username});await store.setJSON('accounts/'+value.username,value);return {modified:true,account:value};},
   async deleteAccount(value,anonymous,attempts,options){calls.push('delete');assert.equal(options.purgePhotos,true);records.delete('accounts/'+value.username);records.delete('apple-identities/'+value.appleSubject);account=null;return {modified:true};}
  };
- const execute=appleAccounts(store,{config:secret,now:()=>clock,identity:async value=>{if(value!==credential)throw Error('wrong credential');return {member:account?.member??'c'.repeat(64),account};},session:async value=>{account=value;return {token:'d'.repeat(64),account:value};},verify:{authorize:async()=>({subject,refreshToken:'grant'}),revoke:async()=>{calls.push('revoke');}},prepareDeletion:async()=>{calls.push('photos');}});
+ const execute=appleAccounts(store,{config:secret,now:()=>clock,identity:async value=>{if(value!==credential)throw Error('wrong credential');return {member:account?.member??'c'.repeat(64),account};},session:async value=>{account=value;return {token:'d'.repeat(64),account:value};},verify:{authorize,revoke:async()=>{calls.push('revoke');}},prepareDeletion:async()=>{calls.push('photos');}});
  async function start(intent,extra={}){return execute({action:'account.apple.start',intent,...extra},credential);}
  async function finish(value,extra={}){return execute({action:'account.apple',state:value.state,code:'code',identityToken:'token',...extra},credential);}
  return {start,finish,calls,records,credential,get account(){return account;},logout(){account=null;},expire(){clock+=300001;}};
@@ -36,6 +55,13 @@ function scenario(){
 test('Apple challenges reject replay and expired attempts; login never silently registers',async()=>{
  const s=scenario(),login=await s.start('login');await assert.rejects(s.finish(login),{code:'apple_not_registered'});await assert.rejects(s.finish(login),{code:'apple_expired'});
  const stale=await s.start('register');s.expire();await assert.rejects(s.finish(stale),{code:'apple_expired'});
+});
+test('Apple account errors preserve only approved diagnostic stages and keep challenges one-use',async()=>{
+ for(const code of ['apple_invalid_a01','apple_invalid_a08','private-token-content']){
+  const s=scenario(async()=>{const error=new Error('private-response');error.code=code;throw error;}),attempt=await s.start('register');
+  await assert.rejects(s.finish(attempt),{code:code.startsWith('apple_invalid_a0')?code:'apple_invalid'});
+  assert.equal(s.account,null);await assert.rejects(s.finish(attempt),{code:'apple_expired'});
+ }
 });
 test('Apple deletion revokes, purges original photos and requires fresh explicit registration',async()=>{
  const s=scenario(),created=await s.finish(await s.start('register'),{name:'Example'}),oldMember=created.account.member;

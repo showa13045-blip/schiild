@@ -46,6 +46,7 @@ export async function sharedRequest<T=SharedState>(action:string,values:Record<s
  let body;try{body=await response.json();}catch{throw Error(t('demo.shared.unavailable'));}
  if(!response.ok){
   const key=body.error;
+  if(typeof key==='string'&&/^apple_invalid_a0[1-9]$/.test(key))throw new SharedError(key,t('demo.line.invalid').replaceAll('LINE','Apple')+' ['+key.slice(-3).toUpperCase()+']');
   if(typeof key==='string'&&/^(apple|whatsapp)_(invalid|expired|conflict|unavailable|not_registered|registered)$/.test(key)){
    const [provider,...suffix]=key.split('_'),messages={invalid:'demo.line.invalid',expired:'demo.line.expired',conflict:'demo.line.conflict',unavailable:'demo.line.unavailable',not_registered:'demo.line.not_registered',registered:'demo.line.registered'} as const;
    const copyKey=messages[suffix.join('_') as keyof typeof messages];
