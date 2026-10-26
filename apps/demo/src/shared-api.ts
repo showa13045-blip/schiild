@@ -20,7 +20,7 @@ export function clearAccountBrowser(notify=true,includeLocal=true){
  if(notify)try{browserStorage().setItem(ACCOUNT_ERASE_EVENT,String(Date.now()));}catch{cleared=false;}
  return cleared;
 }
-export type Account={username:string;name:string;since:string;googleEmail?:string;lineLinked?:boolean;hasPassword?:boolean;canDelete?:boolean;ateliers:{code:string;name:string;capacity:number;canGenerate:boolean}[];custody:{code:string;name:string;day:string;index:number}[]};
+export type Account={username:string;name:string;since:string;googleEmail?:string;lineLinked?:boolean;appleLinked?:boolean;whatsappLinked?:boolean;hasPassword?:boolean;canDelete?:boolean;ateliers:{code:string;name:string;capacity:number;canGenerate:boolean}[];custody:{code:string;name:string;day:string;index:number}[]};
 export function saveSession(token:string){if(!/^[a-f0-9]{64}$/.test(token))throw Error('invalid_session');identityGeneration++;browserStorage().setItem(sessionKey,token);deletionNotified=false;}
 export function clearSession(){identityGeneration++;browserStorage().removeItem(sessionKey);browserStorage().removeItem(credentialKey);}
 export function currentSession(){return browserStorage().getItem(sessionKey);}
@@ -46,6 +46,11 @@ export async function sharedRequest<T=SharedState>(action:string,values:Record<s
  let body;try{body=await response.json();}catch{throw Error(t('demo.shared.unavailable'));}
  if(!response.ok){
   const key=body.error;
+  if(typeof key==='string'&&/^(apple|whatsapp)_(invalid|expired|conflict|unavailable|not_registered|registered)$/.test(key)){
+   const [provider,...suffix]=key.split('_'),messages={invalid:'demo.line.invalid',expired:'demo.line.expired',conflict:'demo.line.conflict',unavailable:'demo.line.unavailable',not_registered:'demo.line.not_registered',registered:'demo.line.registered'} as const;
+   const copyKey=messages[suffix.join('_') as keyof typeof messages];
+   throw new SharedError(key,t(copyKey).replaceAll('LINE',provider==='apple'?'Apple':'WhatsApp'));
+  }
   // A response for an old session must not clear a newly signed-in account.
   const current=(currentSession()||browserStorage().getItem(credentialKey))===requestCredential;
   if(key==='line_required'){if(current)window.dispatchEvent(new Event('schiild:line-required'));throw new SharedError(key,t('demo.auth.line_required'));}

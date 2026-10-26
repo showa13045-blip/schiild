@@ -29,6 +29,7 @@ import GlobalPage from './GlobalPage';
 import type {GlobalSelection} from './GlobalPage';
 import AccountPage,{SettingsPage} from './AccountPage';
 import AuthPage from './AuthPage';
+import {beginApple} from './apple-login';
 import ArchiveCalendar from './ArchiveCalendar';
 import {resetBrowser} from './browser-reset';
 import DailyPostsPage from './DailyPostsPage';
@@ -56,7 +57,7 @@ export default function AtelierApp(){
  const [collection,setCollection]=useState<Collection|null>(null),[view,setView]=useState('experience'),[name,setName]=useState(''),[capacity,setCapacity]=useState(12),[input,setInput]=useState(''),[invitation,setInvitation]=useState<Invitation|null>(null),[sharing,setSharing]=useState<Atelier|null>(null),[deleting,setDeleting]=useState<string|null>(null),[message,setMessage]=useState(''),[busy,setBusy]=useState(false);
  const lock=useRef(false),accountSequence=useRef(0);
  const [navigation,setNavigation]=useState<Navigation>({screen:'home',revision:0}),[globalSelection,setGlobalSelection]=useState<GlobalSelection>({day:demoDay()}),[account,setAccount]=useState<Account|null>(null),[accountRevision,setAccountRevision]=useState(0),[settings,setSettings]=useState(preferences);
- const participant=isWeekPreview||Boolean(account?.lineLinked);
+ const participant=isWeekPreview||Boolean(account?.lineLinked||account?.appleLinked||account?.whatsappLinked);
  useEffect(()=>{const required=()=>{accountSequence.current++;setAccount(null);setView('auth');};window.addEventListener('schiild:line-required',required);return()=>window.removeEventListener('schiild:line-required',required);},[]);
  useEffect(()=>{const removed=()=>finishDeletion();window.addEventListener('schiild:account-deleted',removed);return()=>window.removeEventListener('schiild:account-deleted',removed);},[]);
  useEffect(()=>{const expired=()=>{accountSequence.current++;clearSession();setAccount(null);setAccountRevision(value=>value+1);setCollection(current=>current?{...current,ateliers:current.ateliers.filter(entry=>!entry.online),selected:current.ateliers.find(entry=>!entry.online)?.code??''}:current);setView('auth');};window.addEventListener('schiild:session-expired',expired);return()=>window.removeEventListener('schiild:session-expired',expired);},[]);
@@ -150,7 +151,7 @@ export default function AtelierApp(){
  function updateSettings(value:Preferences){try{savePreferences(value);setSettings(value);}catch{setMessage(t('error.server.title'));}}
  async function logout(){accountSequence.current++;await disablePush().catch(()=>{});await sharedRequest('account.logout');clearSession();googleLogout();setAccount(null);setAccountRevision(value=>value+1);setCollection(current=>current?{...current,ateliers:current.ateliers.filter(entry=>!entry.online),selected:current.ateliers.find(entry=>!entry.online)?.code??''}:current);setView('auth');}
  function finishDeletion(notify=true){accountSequence.current++;const cleared=clearAccountBrowser(notify,notify);if(notify)resetBrowser();googleLogout();setAccount(null);setAccountRevision(value=>value+1);setSettings({name:'',reduceMotion:false});setName('');setInput('');setConcept('');setPublicCode('');setPostSelection(undefined);setDeleting(null);setGlobalSelection({day:demoDay()});setCollection({version:3,device:crypto.randomUUID(),selected:'',ateliers:[]});setNavigation(previous=>({screen:'home',revision:previous.revision+1}));setSharing(null);setInvitation(null);setView('auth');setMessage(t(cleared?'demo.delete.done':'demo.delete.local_failed'));window.scrollTo(0,0);}
- async function deleteAccount(confirmUsername:string,password:string){if(account?.lineLinked){await beginLine('delete',confirmUsername);return;}accountSequence.current++;await sharedRequest<{done:boolean}>('account.delete',{confirmUsername,password});finishDeletion();}
+ async function deleteAccount(confirmUsername:string,password:string){if(account?.appleLinked){await beginApple('delete',confirmUsername);finishDeletion();return;}if(account?.lineLinked){await beginLine('delete',confirmUsername);return;}accountSequence.current++;await sharedRequest<{done:boolean}>('account.delete',{confirmUsername,password});finishDeletion();}
  async function operation(task:()=>Promise<void>){if(lock.current)return;lock.current=true;setBusy(true);setMessage('');try{await task();}catch(error){setMessage(error instanceof Error?error.message:t('demo.shared.unavailable'));}finally{lock.current=false;setBusy(false);}}
  async function create(source?:Atelier){
   if(!participant){rememberAuthDestination('create');go('auth');return;}
