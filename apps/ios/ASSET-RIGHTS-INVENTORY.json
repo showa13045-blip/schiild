@@ -1,0 +1,379 @@
+{
+  "dateJST": "2026-10-28",
+  "scope": "Repository assets used by the fictional one-week example and shared UI. Not an inventory of user uploads or all transitive SDK licenses.",
+  "copyrightSourcesRecorded": true,
+  "thirdPartyPermissionsVerified": false,
+  "appleContentRightsAttested": false,
+  "photos": [
+    {
+      "file": "apps/demo/public/week/photos/0.jpg",
+      "bytes": 85515,
+      "sha256": "c698bc72a3f11ffc728ab202b4f397282b55f09af0172d85043b20561d830912",
+      "author": "Alejandro Escamilla",
+      "source": "https://unsplash.com/photos/yC-Yzbqy7PY",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/1.jpg",
+      "bytes": 77250,
+      "sha256": "b9ddce53a74d514b71ffa06cb0e4a5e6ca66230ae32cf476ec7a2b24794c1ff8",
+      "author": "Alejandro Escamilla",
+      "source": "https://unsplash.com/photos/LNRyGwIJr5c",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/2.jpg",
+      "bytes": 88218,
+      "sha256": "a265c14de3812ec106e00a0c8b6a1b59c590770124cac9e964c4bbd679db9afa",
+      "author": "Alejandro Escamilla",
+      "source": "https://unsplash.com/photos/N7XodRrbzS0",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/3.jpg",
+      "bytes": 73171,
+      "sha256": "cb185b382dc6306697ffd238796e2a60584318bcd3741deac57ef943e7e2bb88",
+      "author": "Alejandro Escamilla",
+      "source": "https://unsplash.com/photos/Dl6jeyfihLk",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/4.jpg",
+      "bytes": 72317,
+      "sha256": "b08ebcc0194e230b75c73660ea3cd5f659b4004e4200149a59a694ba72e4e0eb",
+      "author": "Alejandro Escamilla",
+      "source": "https://unsplash.com/photos/y83Je1OC6Wc",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/5.jpg",
+      "bytes": 83262,
+      "sha256": "c1fc6a717da07b132ea10d0ba82e7d00b1954dba53e580095f879a542d97532d",
+      "author": "Alejandro Escamilla",
+      "source": "https://unsplash.com/photos/LF8gK8-HGSg",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/6.jpg",
+      "bytes": 67336,
+      "sha256": "4aa3c8665cea585b36a998e74b3a7c083cda8854d5ce8c1f0315060a01b8082c",
+      "author": "Alejandro Escamilla",
+      "source": "https://unsplash.com/photos/tAKXap853rY",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/9.jpg",
+      "bytes": 118979,
+      "sha256": "077fa68e7c33170a9f38b834b014e6c0c1c4a95d69292d8584d4b5b70f675584",
+      "author": "Alejandro Escamilla",
+      "source": "https://unsplash.com/photos/ABDTiLqDhJA",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/10.jpg",
+      "bytes": 172711,
+      "sha256": "5720d914836cfc850bcad1512bff75bc6abb830935bcdfbca0c39e1ea7ce11e5",
+      "author": "Paul Jarvis",
+      "source": "https://unsplash.com/photos/6J--NXulQCs",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/11.jpg",
+      "bytes": 118254,
+      "sha256": "54176b4d9f85fedfac811538fbac2033edc25f86ec7b70255db9b2daacb44ccf",
+      "author": "Paul Jarvis",
+      "source": "https://unsplash.com/photos/Cm7oKel-X2Q",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/12.jpg",
+      "bytes": 133331,
+      "sha256": "ddce53d5ce0671f5c788fbc62acd8592bf0e1b09acb0d28c192662f899333c60",
+      "author": "Paul Jarvis",
+      "source": "https://unsplash.com/photos/I_9ILwtsl_k",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/13.jpg",
+      "bytes": 255196,
+      "sha256": "1a1e7990543e824cd2ec6e23ac771a12f22337c62867f5e571d7737cc763b98f",
+      "author": "Paul Jarvis",
+      "source": "https://unsplash.com/photos/3MtiSMdnoCo",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/14.jpg",
+      "bytes": 187433,
+      "sha256": "c29d89aca48cfccfac8b6778c2421c1d9151a54860f89be9d1dd4876da3db1e3",
+      "author": "Paul Jarvis",
+      "source": "https://unsplash.com/photos/IQ1kOQTJrOQ",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/15.jpg",
+      "bytes": 236466,
+      "sha256": "f12bd1386aeb8f8e559decf7af1653cc3307e74179d06458f986cb6f6cec994c",
+      "author": "Paul Jarvis",
+      "source": "https://unsplash.com/photos/NYDo21ssGao",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/16.jpg",
+      "bytes": 159754,
+      "sha256": "1636b32a782e98e050332d9b83c0d902d9300f4bdd5e82c0cae8908c46aff1b8",
+      "author": "Paul Jarvis",
+      "source": "https://unsplash.com/photos/gkT4FfgHO5o",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/17.jpg",
+      "bytes": 308652,
+      "sha256": "125512bfbd41882957f80bba68c2b3ed393cb5cf851f8a824d9eaf9863aed769",
+      "author": "Paul Jarvis",
+      "source": "https://unsplash.com/photos/Ven2CV8IJ5A",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/18.jpg",
+      "bytes": 151357,
+      "sha256": "1023535888254bc7efad1492eff0be3fa0eb9e995fe75000c2f3bba9a501ea59",
+      "author": "Paul Jarvis",
+      "source": "https://unsplash.com/photos/Ps2n0rShqaM",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/19.jpg",
+      "bytes": 192469,
+      "sha256": "b19ada2e1add58bb23dbef6096ca393edfc8865ff5d2d595dc8bfd663372090e",
+      "author": "Paul Jarvis",
+      "source": "https://unsplash.com/photos/P7Lh0usGcuk",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/20.jpg",
+      "bytes": 118982,
+      "sha256": "4ecdff6aa36642e112379570b187b50955756dbe07754f0bf7a479de65bbaaf8",
+      "author": "Aleks Dorohovich",
+      "source": "https://unsplash.com/photos/nJdwUHmaY8A",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/21.jpg",
+      "bytes": 188260,
+      "sha256": "0ab9fb943ab003a55cf30f4598e6e63344dcf54a2cdd80a0e2a9531150ea73ba",
+      "author": "Alejandro Escamilla",
+      "source": "https://unsplash.com/photos/jVb0mSn0LbE",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/23.jpg",
+      "bytes": 51234,
+      "sha256": "8d78aaaf7bb9e201d1c92f97a5da6b7664b30cfb36634b4b9f107872f7ece4ce",
+      "author": "Alejandro Escamilla",
+      "source": "https://unsplash.com/photos/8yqds_91OLw",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/24.jpg",
+      "bytes": 55624,
+      "sha256": "69fdac5f61aaa3be5c71a80aab148f568633dda69c384025f397422a9bf32852",
+      "author": "Alejandro Escamilla",
+      "source": "https://unsplash.com/photos/cZhUxIQjILg",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/25.jpg",
+      "bytes": 225116,
+      "sha256": "d7e49fd9e570f8a39e63311a2d8a7ffc7ed436007539ebdd3ed8bf19fd4531c8",
+      "author": "Alejandro Escamilla",
+      "source": "https://unsplash.com/photos/Iuq0EL4EINY",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/27.jpg",
+      "bytes": 156752,
+      "sha256": "b73d25f5ab7b6bb2de0db6da27c65716a1165ab5540d886f302a4569f66276ea",
+      "author": "Yoni Kaplan-Nadel",
+      "source": "https://unsplash.com/photos/iJnZwLBOB1I",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/28.jpg",
+      "bytes": 293008,
+      "sha256": "34368957cab474f0bb9ae8fa14d6852a26199a8773f17048f4a049db49e0e4f6",
+      "author": "Jerry Adney",
+      "source": "https://unsplash.com/photos/_WiFMBRT7Aw",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/29.jpg",
+      "bytes": 324479,
+      "sha256": "b9b47b3858d9507f8278e80106891a9d37555a3530f4988a5c7fc93762f0a4c1",
+      "author": "Go Wild",
+      "source": "https://unsplash.com/photos/V0yAek6BgGk",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/30.jpg",
+      "bytes": 89032,
+      "sha256": "079bc6ccc31fb7161a2800aaa1ed1542c84097885b754bce742d14335ceece18",
+      "author": "Shyamanta Baruah",
+      "source": "https://unsplash.com/photos/aeVA-j1y2BY",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/33.jpg",
+      "bytes": 101598,
+      "sha256": "368950c62463f094c9a2344ab73c04e1d8db9de4b039654b03f23fae32ed089b",
+      "author": "Alejandro Escamilla",
+      "source": "https://unsplash.com/photos/LBI7cgq3pbM",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/42.jpg",
+      "bytes": 93341,
+      "sha256": "477f3d36c824d9f038dc93e44b88fbc66bb0bf69d48f7b9876ed3275483a89c2",
+      "author": "Luke Chesser",
+      "source": "https://unsplash.com/photos/KR2mdHJ5qMg",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/48.jpg",
+      "bytes": 46044,
+      "sha256": "2b93aedd5534b032b21c1e1508c3707cbbbc47afc09c057f3bede8f96865543b",
+      "author": "Luke Chesser",
+      "source": "https://unsplash.com/photos/1uxV8fAfhVM",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/60.jpg",
+      "bytes": 61825,
+      "sha256": "c3e9fe397b02bb88204ec654341d1e36790d1d7ac67bcf47c92fe7303571e438",
+      "author": "Vadim Sherbakov",
+      "source": "https://unsplash.com/photos/Hi9GSwWkCJk",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    },
+    {
+      "file": "apps/demo/public/week/photos/63.jpg",
+      "bytes": 33576,
+      "sha256": "09d1515cdad23d43e2e80a4288365781a640c30eccf48134e0de081fcc33b615",
+      "author": "Justin Leibow",
+      "source": "https://unsplash.com/photos/ZJsseAxEcqM",
+      "copyrightLicense": "https://unsplash.com/license",
+      "thirdPartyPermissions": "not independently verified",
+      "rightsConfirmation": "pending"
+    }
+  ],
+  "fonts": [
+    {
+      "file": "apps/demo/public/fonts/inter-400.woff2",
+      "bytes": 7564,
+      "sha256": "aa15673d34908134ba03aa8105047716e61d24e2dd57c630a63f80d2e7960360",
+      "licenseFile": "apps/demo/public/fonts/inter-LICENSE.txt",
+      "licenseSha256": "5b9321a4298cfeb6b34354164a1c3afc3db114569984c502b9b35d988fd58c57",
+      "license": "SIL Open Font License 1.1"
+    },
+    {
+      "file": "apps/demo/public/fonts/inter-500.woff2",
+      "bytes": 7712,
+      "sha256": "48a967cf86bbddf2dc66c5e8184f8194bf98dbf4a86efc9ce24ac9a0d0f89992",
+      "licenseFile": "apps/demo/public/fonts/inter-LICENSE.txt",
+      "licenseSha256": "5b9321a4298cfeb6b34354164a1c3afc3db114569984c502b9b35d988fd58c57",
+      "license": "SIL Open Font License 1.1"
+    },
+    {
+      "file": "apps/demo/public/fonts/noto-400.woff2",
+      "bytes": 47976,
+      "sha256": "5abb9fe513256c7a44a1a6e06d567b69b4eb20f97cf3b17c4302f2415f5008bb",
+      "licenseFile": "apps/demo/public/fonts/noto-LICENSE.txt",
+      "licenseSha256": "1c05c68c34f9708415aada51f17e1b0092d2cea709bf4a94cd38114f9e73d7d9",
+      "license": "SIL Open Font License 1.1"
+    },
+    {
+      "file": "apps/demo/public/fonts/noto-500.woff2",
+      "bytes": 48100,
+      "sha256": "8c3b3d3b7878ee6f431b9e726f59535f43d8fe05b2197156f1ded65c0cbc4e06",
+      "licenseFile": "apps/demo/public/fonts/noto-LICENSE.txt",
+      "licenseSha256": "1c05c68c34f9708415aada51f17e1b0092d2cea709bf4a94cd38114f9e73d7d9",
+      "license": "SIL Open Font License 1.1"
+    },
+    {
+      "file": "apps/demo/public/fonts/NotoSansKhmer.ttf",
+      "bytes": 359788,
+      "sha256": "f37a8431a0c5d5ed2f81a767417546aca576a81fb7eff9c924d46aecf828f2ca",
+      "licenseFile": "apps/demo/public/fonts/NotoSansKhmer-OFL.txt",
+      "licenseSha256": "be0407f060aea48787ff9e75d8d3aedef70aef113b3ce9aca26fdaacd10b1870",
+      "license": "SIL Open Font License 1.1"
+    },
+    {
+      "file": "apps/demo/public/fonts/NotoSansDevanagari.ttf",
+      "bytes": 641944,
+      "sha256": "14ec4af41f27482216d1c2229f417ff9b1425e1babb014e57d1d40d03229853e",
+      "licenseFile": "apps/demo/public/fonts/NotoSansDevanagari-OFL.txt",
+      "licenseSha256": "a216f6f8d85c7228093e0ee5e258d9d377e6671f68acb4db1930b29583d0f331",
+      "license": "SIL Open Font License 1.1"
+    }
+  ]
+}
