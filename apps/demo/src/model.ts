@@ -2,7 +2,7 @@ import {browserStorage} from './preview-mode.ts';
 import {partition,random,render,synthetic,dataUrl,shuffle} from './engine';
 import type {Rect} from './engine';
 import type {Area} from './area';
-export type Work={day:string;concept?:string;image:string;rects:Rect[];order:number[];count:number;index:number;custody:'self'|'other';opened:boolean;global?:string;x?:number;y?:number;area?:Area;outputSize?:number};
+export type Work={reportUrl?:string;day:string;concept?:string;image:string;rects:Rect[];order:number[];count:number;index:number;custody:'self'|'other';opened:boolean;global?:string;x?:number;y?:number;area?:Area;outputSize?:number};
 export type State={version:1;day:string;seed:number;rects:Rect[];photo:string|null;count:number;works:Work[];winner:'self'|'other';ready:string|null;outputSize?:number};
 export const STORAGE='schiild.demo.v1';
 export const dayAfter=(day:string,n=1)=>new Date(Date.parse(day+'T00:00:00Z')+n*86400000).toISOString().slice(0,10);

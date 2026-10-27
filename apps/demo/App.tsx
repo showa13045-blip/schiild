@@ -1,4 +1,5 @@
 import PostingRules from './src/PostingRules';
+import ReportLink from './src/ReportLink';
 import AtelierNameLabel from './src/AtelierNameLabel';
 import React,{useEffect,useRef,useState} from 'react';
 import {t} from './src/copy';
@@ -86,7 +87,7 @@ export function Reveal({work,atelier,onOpened,onNext,shared=false}:{work:Work;at
    <div className="reveal-record" style={{opacity:record?1:0,transitionDuration:`${REVEAL.recordFade}ms`}}><AtelierNameLabel/><h1>{atelier}</h1><AtelierConcept concept={work.concept}/><p className="mono">{date(work.day)}　／　{work.count} {t('common.of')} {work.rects.length}</p><p className="window">{windowText(work.day)}</p></div>
    <div className="custody" style={{opacity:custody?1:0,transitionDuration:`${REVEAL.custodyFade}ms`}}><span className="wall-label">{t('reveal.custody_label')}</span><p>{t(work.custody==='self'?'reveal.custody.self':shared?'demo.shared.custody.other':'reveal.custody.other',{name:t('demo.sample.custodian')})}</p></div>
    {complete&&<AreaDisplay area={work.area??rectArea(work.global?work.rects.find(rect=>rect.slot===0):undefined,work.outputSize??128)}/>}
-   {complete&&<Button onClick={onNext}>{t('global.label')} <Icon kind="arrow"/></Button>}
+   {complete&&<Button onClick={onNext}>{t('global.label')} <Icon kind="arrow"/></Button>}{complete&&<ReportLink url={work.reportUrl}/>}
   </>}
  </section>;
 }

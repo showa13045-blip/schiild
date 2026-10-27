@@ -29,6 +29,16 @@ are isolated from ordinary users. Review credentials cannot access ordinary data
    Original photos, memberships, consent and queue records are removed. Shared artworks
    remain anonymous. Signing in again creates a new empty test account.
 
+To test content reports, open Report below an atelier artwork or GLOBAL SCHIILD.
+Select the schiil by tapping it or entering its 1-based X/Y coordinates, choose a
+reason and send. Reports alone do not remove content. In Profile > Settings >
+Review reports, open the selected contribution, enter an internal decision note
+and remove that schiil or dismiss the report. Only the selected destination is
+affected. Other contributions and the custodian remain. GLOBAL is compacted from
+the remaining schiils, and reports continue to identify the same schiil if its
+coordinates later change. These actions use isolated review data and the supplied
+review_one account. Blocking abusive users is not yet implemented.
+
 To test ordinary Sign in with Apple, exit App Review and choose Sign up with Apple
 in the normal sign-in screen. It opens the native authentication sheet; no LINE or
 WhatsApp account or phone number is needed. Normal Apple-account deletion requires
@@ -46,7 +56,7 @@ notifications are not currently implemented.
 ## 残作業
 
 - Kapsoの実設定を確認してモデル改善利用を無効化し、第三者収集を含むプライバシー申告を確定する。
-- 作品からのアプリ内通報・悪質な利用者のブロック・承認済み内容への対応を完成させる。
+- 悪質な利用者のブロックを完成させる。作品からの通報と、選択した公開先のシールだけを除去する運営対応は実装済み。
 - 実機の撮影・投稿・削除の確認と、提出用iPad／iPhone画像を用意する。
 - 投稿ルールとは別に、配信権の最終申告を本人が確認する。
 - 完了前にこれらを対応済みと申告しない。

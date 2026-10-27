@@ -1,4 +1,5 @@
 import ModerationNotice from './ModerationNotice';
+import ReportLink from './ReportLink';
 import React,{useCallback,useEffect,useState} from 'react';
 import {t} from './copy';
 import {shortDate} from './language';
@@ -10,7 +11,7 @@ import AreaDisplay from './AreaDisplay';
 import GlobalExplorer from './GlobalExplorer';
 import type {GlobalSchiil} from './global-schiils';
 export type GlobalSelection={day:string;sample?:Work};
-type GlobalWork={moderationStatus?:string;day:string;image:string|null;schiilImage?:string;count:number;ateliers:number;final:boolean;x?:number;y?:number;positions?:number[];outputSize?:number;layoutRevision?:string};
+type GlobalWork={reportUrl?:string;moderationStatus?:string;day:string;image:string|null;schiilImage?:string;count:number;ateliers:number;final:boolean;x?:number;y?:number;positions?:number[];outputSize?:number;layoutRevision?:string};
 export default function GlobalPage({selection,revision}:{selection:GlobalSelection;revision:number}){
  const [work,setWork]=useState<GlobalWork|null>(null),[error,setError]=useState(''),[zoom,setZoom]=useState(false),[reload,setReload]=useState(0);
  useEffect(()=>{
@@ -37,7 +38,7 @@ export default function GlobalPage({selection,revision}:{selection:GlobalSelecti
    {!mine&&<p>{t('demo.global.no_pixel')}</p>}
    <div className="stats global-stats"><div><span>{t('global.stat.posts')}</span><b>{work.count}</b></div></div>
    <AreaDisplay global area={{pixels:mine?1:0,total,percent:(mine?1:0)/total*100}}/>
-   {!work.final&&!selection.sample&&<p className="shared-note">{t('demo.global.live')}</p>}
+   {!work.final&&!selection.sample&&<p className="shared-note">{t('demo.global.live')}</p>}<ReportLink url={work.reportUrl}/>
   </>}
  </section>;
 }
