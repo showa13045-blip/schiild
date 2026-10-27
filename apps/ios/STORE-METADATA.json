@@ -1,0 +1,141 @@
+{
+  "appId": "6827169562",
+  "version": "1.0.0",
+  "localizations": [
+    {
+      "locale": "ja",
+      "name": "Schiild",
+      "subtitle": "今日の写真から、みんなの作品へ",
+      "promotionalText": "今日の写真を、みんなで一枚の作品に。友達とアトリエをつくり、日々のシールをシールトとカレンダーに残します。",
+      "description": "一日一枚の写真から、日々を重ねる。\n\nSchiildは、今日撮った写真「シール」を持ち寄り、アトリエのみんなで一枚の作品「シールト」をつくる日常記録アプリです。\n\n・友達とアトリエをつくる\n招待コードを共有して参加。アトリエのコンセプトに合わせて、今日のシールを記録します。\n\n・今日のシールを撮る\nアプリのカメラで撮影し、アトリエごとに一日一枚を記録。写真は運営者の確認後に公開作品へ反映され、ピクセルの表現でみんなのシールと一枚の作品になります。確認が終わるまでは公開されず、後日の確認で元の日付の作品が更新される場合があります。\n\n・GLOBAL SCHIILDに参加する\n今日のGLOBAL SCHIILDにも、希望するシールを一日一枚記録できます。全体から自分の区画へ近づき、一日の記録を眺められます。\n\n・カレンダーで振り返る\nアトリエとGLOBAL SCHIILDの作品を日付からたどれます。\n\n登録・ログインにはApple、LINE、WhatsAppのいずれかによる本人確認を利用します。公開アトリエやGLOBAL SCHIILDは、ログイン前でも閲覧できます。撮影にはカメラへのアクセスとインターネット接続が必要です。",
+      "keywords": "写真,日記,日常,記録,カレンダー,ピクセルアート,共同制作,アトリエ",
+      "supportUrl": "https://schiild.app/support.html",
+      "marketingUrl": "https://schiild.app/",
+      "privacyPolicyUrl": "https://schiild.app/privacy.html"
+    },
+    {
+      "locale": "en-US",
+      "name": "Schiild",
+      "subtitle": "A photo a day, made together",
+      "promotionalText": "Turn everyday photos into a shared work of art. Create an atelier with friends, record your daily schiil, and revisit your days on the calendar.",
+      "description": "A little of your day, part of something shared.\n\nSchiild is a daily photo journal. Bring a photo, called a schiil, to your atelier and make a shared pixel artwork, a schiild, with the people there.\n\nCREATE AN ATELIER\nMake an atelier with friends and share its invitation code. Choose a concept, or leave room for everyone's everyday favorites.\n\nRECORD TODAY'S SCHIIL\nTake a photo with the in-app camera and record one schiil per atelier each day. Photos appear in shared artworks after review by the operator. They stay private while waiting for approval; later approval may update the artwork for its original date.\n\nJOIN GLOBAL SCHIILD\nChoose to record one schiil in the day's GLOBAL SCHIILD. Explore the whole artwork, then zoom in to find your own place in it.\n\nREVISIT YOUR DAYS\nBrowse atelier artworks and GLOBAL SCHIILD on the archive calendar.\n\nRegister and sign in using Apple, LINE, or WhatsApp. Public ateliers and GLOBAL SCHIILD can be viewed before signing in. Taking photos requires camera access and an internet connection.",
+      "keywords": "photo,journal,daily,calendar,pixel art,collaborative,atelier,memories",
+      "supportUrl": "https://schiild.app/support.html",
+      "marketingUrl": "https://schiild.app/",
+      "privacyPolicyUrl": "https://schiild.app/privacy.html"
+    },
+    {
+      "locale": "it",
+      "name": "Schiild",
+      "subtitle": "Una foto al giorno, insieme",
+      "promotionalText": "Le foto di ogni giorno diventano un'opera condivisa. Crea un atelier con gli amici, aggiungi il tuo schiil e ritrova i ricordi sul calendario.",
+      "description": "Un piccolo momento della tua giornata, parte di un'opera condivisa.\n\nSchiild è un diario fotografico quotidiano. Condividi nel tuo atelier una foto, chiamata schiil, e crea insieme agli altri un'opera in pixel: lo schiild.\n\nCREA UN ATELIER\nCrea un atelier con gli amici e condividi il codice d'invito. Scegli un tema oppure lascia spazio ai piccoli momenti preferiti di ciascuno.\n\nREGISTRA LO SCHIIL DI OGGI\nScatta una foto con la fotocamera dell'app e registra uno schiil al giorno per ogni atelier. Le foto vengono inserite nelle opere condivise dopo il controllo del gestore. Nell'attesa restano private; un'approvazione successiva può aggiornare l'opera della data originale.\n\nPARTECIPA A GLOBAL SCHIILD\nSe lo desideri, registra uno schiil nel GLOBAL SCHIILD del giorno. Esplora l'opera intera e ingrandiscila per ritrovare il tuo spazio.\n\nRIPERCORRI LE TUE GIORNATE\nSfoglia le opere degli atelier e GLOBAL SCHIILD nel calendario dell'archivio.\n\nPuoi registrarti e accedere con Apple, LINE o WhatsApp. Gli atelier pubblici e GLOBAL SCHIILD sono visibili anche senza accesso. Per scattare foto servono il permesso di usare la fotocamera e una connessione a internet.",
+      "keywords": "foto,diario,ricordi,calendario,pixel art,atelier,creatività,insieme",
+      "supportUrl": "https://schiild.app/support.html",
+      "marketingUrl": "https://schiild.app/",
+      "privacyPolicyUrl": "https://schiild.app/privacy.html"
+    },
+    {
+      "locale": "es-ES",
+      "name": "Schiild",
+      "subtitle": "Una foto al día, entre todos",
+      "promotionalText": "Convierte las fotos cotidianas en una obra compartida. Crea un atelier con amigos, guarda tu schiil del día y vuelve a tus recuerdos desde el calendario.",
+      "description": "Un pequeño momento de tu día, parte de algo compartido.\n\nSchiild es un diario fotográfico. Aporta a tu atelier una foto, llamada schiil, y crea con los demás una obra de píxeles: un schiild.\n\nCREA UN ATELIER\nCrea un atelier con amigos y comparte el código de invitación. Elige un tema o deja espacio para los pequeños momentos favoritos de cada persona.\n\nREGISTRA EL SCHIIL DE HOY\nHaz una foto con la cámara de la app y registra un schiil al día en cada atelier. Las fotos se incorporan a las obras compartidas después de que las revise el equipo responsable. Mientras esperan aprobación, permanecen privadas. Una aprobación posterior puede actualizar la obra de la fecha original.\n\nPARTICIPA EN GLOBAL SCHIILD\nSi quieres, registra un schiil en el GLOBAL SCHIILD del día. Explora la obra completa y amplíala para encontrar tu espacio.\n\nRECUERDA TUS DÍAS\nConsulta las obras de tus ateliers y GLOBAL SCHIILD en el calendario del archivo.\n\nRegístrate e inicia sesión con Apple, LINE o WhatsApp. Puedes ver los ateliers públicos y GLOBAL SCHIILD sin iniciar sesión. Para hacer fotos necesitas permitir el acceso a la cámara y tener conexión a internet.",
+      "keywords": "fotos,diario,recuerdos,calendario,píxeles,arte,atelier,amigos",
+      "supportUrl": "https://schiild.app/support.html",
+      "marketingUrl": "https://schiild.app/",
+      "privacyPolicyUrl": "https://schiild.app/privacy.html"
+    },
+    {
+      "locale": "fr-FR",
+      "name": "Schiild",
+      "subtitle": "Une photo par jour, ensemble",
+      "promotionalText": "Les photos du quotidien deviennent une œuvre partagée. Créez un atelier entre amis, ajoutez votre schiil du jour et retrouvez vos souvenirs dans le calendrier.",
+      "description": "Un petit moment de votre journée, une part d'une œuvre commune.\n\nSchiild est un journal photo du quotidien. Apportez à votre atelier une photo, appelée schiil, et créez ensemble une œuvre en pixels : un schiild.\n\nCRÉEZ UN ATELIER\nCréez un atelier avec vos amis et partagez son code d'invitation. Choisissez un thème ou laissez chacun partager ses petits moments préférés.\n\nAJOUTEZ LE SCHIIL DU JOUR\nPrenez une photo avec l'appareil photo de l'application et ajoutez un schiil par jour dans chaque atelier. Les photos sont intégrées aux œuvres partagées après vérification par l'équipe responsable. Elles restent privées en attendant leur validation. Une validation ultérieure peut mettre à jour l'œuvre de la date d'origine.\n\nPARTICIPEZ À GLOBAL SCHIILD\nSi vous le souhaitez, ajoutez un schiil au GLOBAL SCHIILD du jour. Découvrez l'œuvre entière, puis zoomez pour retrouver votre place.\n\nRETROUVEZ VOS JOURNÉES\nParcourez les œuvres de vos ateliers et GLOBAL SCHIILD dans le calendrier des archives.\n\nInscrivez-vous et connectez-vous avec Apple, LINE ou WhatsApp. Les ateliers publics et GLOBAL SCHIILD sont visibles sans connexion. La prise de photos nécessite l'accès à l'appareil photo et une connexion à internet.",
+      "keywords": "photo,journal,souvenirs,calendrier,pixel art,atelier,amis,création",
+      "supportUrl": "https://schiild.app/support.html",
+      "marketingUrl": "https://schiild.app/",
+      "privacyPolicyUrl": "https://schiild.app/privacy.html"
+    },
+    {
+      "locale": "nl-NL",
+      "name": "Schiild",
+      "subtitle": "Elke dag een foto, samen",
+      "promotionalText": "Maak van alledaagse foto's een gezamenlijk kunstwerk. Begin een atelier met vrienden, voeg je dagelijkse schiil toe en kijk terug via de kalender.",
+      "description": "Een klein moment uit je dag, als deel van iets gezamenlijks.\n\nSchiild is een dagelijks fotodagboek. Deel in je atelier een foto, een schiil, en maak samen met de anderen een kunstwerk van pixels: een schiild.\n\nBEGIN EEN ATELIER\nMaak een atelier met vrienden en deel de uitnodigingscode. Kies een thema of laat iedereen een eigen favoriet moment vastleggen.\n\nLEG DE SCHIIL VAN VANDAAG VAST\nMaak een foto met de camera in de app en voeg elke dag één schiil per atelier toe. Foto's worden na controle door de beheerder in de gezamenlijke kunstwerken opgenomen. Tot ze zijn goedgekeurd, blijven ze privé. Een latere goedkeuring kan het kunstwerk van de oorspronkelijke datum bijwerken.\n\nDOE MEE AAN GLOBAL SCHIILD\nVoeg als je wilt één schiil toe aan de GLOBAL SCHIILD van vandaag. Bekijk het hele kunstwerk en zoom in om je eigen plek te vinden.\n\nKIJK TERUG OP JE DAGEN\nBlader via de archiefkalender door de kunstwerken van je ateliers en GLOBAL SCHIILD.\n\nRegistreer je en log in met Apple, LINE of WhatsApp. Openbare ateliers en GLOBAL SCHIILD kun je ook zonder inloggen bekijken. Om foto's te maken zijn cameratoegang en een internetverbinding nodig.",
+      "keywords": "foto,dagboek,herinneringen,kalender,pixelkunst,atelier,vrienden,samen",
+      "supportUrl": "https://schiild.app/support.html",
+      "marketingUrl": "https://schiild.app/",
+      "privacyPolicyUrl": "https://schiild.app/privacy.html"
+    },
+    {
+      "locale": "ko",
+      "name": "Schiild",
+      "subtitle": "하루 한 장, 함께 만드는 작품",
+      "promotionalText": "일상의 사진을 모아 하나의 작품으로 남겨 보세요. 친구들과 아틀리에를 만들고 오늘의 schiil을 기록하며, 달력에서 지난날을 돌아볼 수 있습니다.",
+      "description": "하루의 작은 순간이 모여 하나의 작품이 됩니다.\n\nSchiild는 일상을 사진으로 기록하는 앱입니다. 아틀리에에 사진 한 장, schiil을 기록하고 다른 사람들과 함께 픽셀 작품인 schiild를 만듭니다.\n\n아틀리에 만들기\n친구들과 아틀리에를 만들고 초대 코드를 공유하세요. 주제를 정하거나 각자가 좋아하는 일상의 순간을 자유롭게 담을 수 있습니다.\n\n오늘의 schiil 기록하기\n앱의 카메라로 사진을 찍어 아틀리에마다 하루 한 장씩 기록하세요. 사진은 운영자의 확인을 거친 뒤 공동 작품에 반영됩니다. 승인 전에는 공개되지 않으며, 나중에 승인되면 원래 날짜의 작품이 업데이트될 수 있습니다.\n\nGLOBAL SCHIILD에 참여하기\n원한다면 하루 한 장의 schiil을 그날의 GLOBAL SCHIILD에도 기록할 수 있습니다. 전체 작품을 살펴보고 확대해 나의 자리를 찾아보세요.\n\n달력으로 돌아보기\n아카이브 달력에서 날짜별 아틀리에 작품과 GLOBAL SCHIILD를 볼 수 있습니다.\n\nApple, LINE 또는 WhatsApp으로 가입하고 로그인할 수 있습니다. 공개 아틀리에와 GLOBAL SCHIILD는 로그인 전에도 볼 수 있습니다. 사진 촬영에는 카메라 접근 권한과 인터넷 연결이 필요합니다.",
+      "keywords": "사진,일기,일상,기록,달력,추억,픽셀아트,아틀리에,친구,공동작품",
+      "supportUrl": "https://schiild.app/support.html",
+      "marketingUrl": "https://schiild.app/",
+      "privacyPolicyUrl": "https://schiild.app/privacy.html"
+    },
+    {
+      "locale": "id",
+      "name": "Schiild",
+      "subtitle": "Satu foto sehari, bersama",
+      "promotionalText": "Jadikan foto sehari-hari sebuah karya bersama. Buat atelier dengan teman, simpan schiil hari ini, lalu lihat kembali kenangan lewat kalender.",
+      "description": "Momen kecil dari harimu, bagian dari karya bersama.\n\nSchiild adalah jurnal foto harian. Bagikan satu foto, yang disebut schiil, di atelier dan buat karya piksel bersama orang-orang di sana: sebuah schiild.\n\nBUAT ATELIER\nBuat atelier dengan teman dan bagikan kode undangannya. Tentukan tema atau biarkan setiap orang mengabadikan hal favorit dalam kesehariannya.\n\nSIMPAN SCHIIL HARI INI\nAmbil foto dengan kamera di aplikasi dan simpan satu schiil per hari di setiap atelier. Foto akan dimasukkan ke karya bersama setelah diperiksa pengelola. Selama menunggu persetujuan, foto tetap privat. Persetujuan yang diberikan kemudian dapat memperbarui karya pada tanggal aslinya.\n\nIKUT GLOBAL SCHIILD\nJika mau, simpan satu schiil di GLOBAL SCHIILD hari itu. Jelajahi seluruh karya, lalu perbesar untuk menemukan bagianmu.\n\nKENANG KEMBALI HARI-HARIMU\nTelusuri karya atelier dan GLOBAL SCHIILD melalui kalender arsip.\n\nDaftar dan masuk dengan Apple, LINE, atau WhatsApp. Atelier publik dan GLOBAL SCHIILD dapat dilihat tanpa masuk. Untuk mengambil foto, diperlukan izin kamera dan koneksi internet.",
+      "keywords": "foto,jurnal,harian,kenangan,kalender,seni piksel,atelier,teman,karya bersama",
+      "supportUrl": "https://schiild.app/support.html",
+      "marketingUrl": "https://schiild.app/",
+      "privacyPolicyUrl": "https://schiild.app/privacy.html"
+    },
+    {
+      "locale": "hi",
+      "name": "Schiild",
+      "subtitle": "हर दिन एक तस्वीर, साथ मिलकर",
+      "promotionalText": "रोज़ की तस्वीरों से मिलकर एक साझा कलाकृति बनाएं। दोस्तों के साथ atelier बनाएं, अपना रोज़ का schiil जोड़ें और कैलेंडर में पुरानी यादें देखें।",
+      "description": "आपके दिन का एक छोटा-सा पल, एक साझा कलाकृति का हिस्सा।\n\nSchiild रोज़मर्रा की तस्वीरें सहेजने की एक डायरी है। अपने atelier में एक तस्वीर, जिसे schiil कहते हैं, जोड़ें और बाकी लोगों के साथ पिक्सेल से बनी एक कलाकृति, यानी schiild, बनाएं।\n\nअपना atelier बनाएं\nदोस्तों के साथ atelier बनाएं और उसका आमंत्रण कोड साझा करें। कोई विषय चुनें या सभी को अपने पसंदीदा रोज़मर्रा के पल सहेजने दें।\n\nआज का schiil सहेजें\nऐप के कैमरे से तस्वीर लें और हर atelier में रोज़ एक schiil जोड़ें। तस्वीरें संचालक की समीक्षा के बाद साझा कलाकृतियों में दिखाई देती हैं। मंज़ूरी मिलने तक वे निजी रहती हैं। बाद में मिली मंज़ूरी से तस्वीर की मूल तारीख की कलाकृति अपडेट हो सकती है।\n\nGLOBAL SCHIILD में हिस्सा लें\nचाहें तो उस दिन के GLOBAL SCHIILD में भी एक schiil जोड़ें। पूरी कलाकृति देखें और ज़ूम करके उसमें अपनी जगह ढूंढें।\n\nबीते दिन फिर देखें\nआर्काइव के कैलेंडर में atelier की कलाकृतियां और GLOBAL SCHIILD तारीख के हिसाब से देखें।\n\nApple, LINE या WhatsApp से पंजीकरण करें और लॉगिन करें। सार्वजनिक atelier और GLOBAL SCHIILD बिना लॉगिन के भी देखे जा सकते हैं। तस्वीर लेने के लिए कैमरे की अनुमति और इंटरनेट कनेक्शन ज़रूरी है।",
+      "keywords": "तस्वीर,फोटो,डायरी,यादें,कैलेंडर,पिक्सेल,कला,दोस्त,atelier",
+      "supportUrl": "https://schiild.app/support.html",
+      "marketingUrl": "https://schiild.app/",
+      "privacyPolicyUrl": "https://schiild.app/privacy.html"
+    },
+    {
+      "locale": "es-MX",
+      "name": "Schiild",
+      "subtitle": "Una foto al día, entre todos",
+      "promotionalText": "Convierte las fotos cotidianas en una obra compartida. Crea un atelier con amigos, guarda tu schiil del día y vuelve a tus recuerdos desde el calendario.",
+      "description": "Un pequeño momento de tu día, parte de algo compartido.\n\nSchiild es un diario fotográfico. Aporta a tu atelier una foto, llamada schiil, y crea con los demás una obra de píxeles: un schiild.\n\nCREA UN ATELIER\nCrea un atelier con amigos y comparte el código de invitación. Elige un tema o deja espacio para los pequeños momentos favoritos de cada persona.\n\nREGISTRA EL SCHIIL DE HOY\nHaz una foto con la cámara de la app y registra un schiil al día en cada atelier. Las fotos se incorporan a las obras compartidas después de que las revise el equipo responsable. Mientras esperan aprobación, permanecen privadas. Una aprobación posterior puede actualizar la obra de la fecha original.\n\nPARTICIPA EN GLOBAL SCHIILD\nSi quieres, registra un schiil en el GLOBAL SCHIILD del día. Explora la obra completa y amplíala para encontrar tu espacio.\n\nRECUERDA TUS DÍAS\nConsulta las obras de tus ateliers y GLOBAL SCHIILD en el calendario del archivo.\n\nRegístrate e inicia sesión con Apple, LINE o WhatsApp. Puedes ver los ateliers públicos y GLOBAL SCHIILD sin iniciar sesión. Para hacer fotos necesitas permitir el acceso a la cámara y tener conexión a internet.",
+      "keywords": "fotos,diario,recuerdos,calendario,píxeles,arte,atelier,amigos",
+      "supportUrl": "https://schiild.app/support.html",
+      "marketingUrl": "https://schiild.app/",
+      "privacyPolicyUrl": "https://schiild.app/privacy.html"
+    },
+    {
+      "locale": "en-GB",
+      "name": "Schiild",
+      "subtitle": "A photo a day, made together",
+      "promotionalText": "Turn everyday photos into a shared work of art. Create an atelier with friends, record your daily schiil, and revisit your days on the calendar.",
+      "description": "A little of your day, part of something shared.\n\nSchiild is a daily photo journal. Bring a photo, called a schiil, to your atelier and make a shared pixel artwork, a schiild, with the people there.\n\nCREATE AN ATELIER\nMake an atelier with friends and share its invitation code. Choose a concept, or leave room for everyone's everyday favorites.\n\nRECORD TODAY'S SCHIIL\nTake a photo with the in-app camera and record one schiil per atelier each day. Photos appear in shared artworks after review by the operator. They stay private while waiting for approval; later approval may update the artwork for its original date.\n\nJOIN GLOBAL SCHIILD\nChoose to record one schiil in the day's GLOBAL SCHIILD. Explore the whole artwork, then zoom in to find your own place in it.\n\nREVISIT YOUR DAYS\nBrowse atelier artworks and GLOBAL SCHIILD on the archive calendar.\n\nRegister and sign in using Apple, LINE, or WhatsApp. Public ateliers and GLOBAL SCHIILD can be viewed before signing in. Taking photos requires camera access and an internet connection.",
+      "keywords": "photo,journal,daily,calendar,pixel art,collaborative,atelier,memories",
+      "supportUrl": "https://schiild.app/support.html",
+      "marketingUrl": "https://schiild.app/",
+      "privacyPolicyUrl": "https://schiild.app/privacy.html"
+    }
+  ],
+  "unpublishedLocalizations": [
+    {
+      "locale": "km",
+      "name": "Schiild",
+      "subtitle": "រូបថតប្រចាំថ្ងៃ",
+      "promotionalText": "បង្កើតស្នាដៃរួមពីរូបថតប្រចាំថ្ងៃ។ បង្កើត atelier ជាមួយមិត្តភក្តិ បន្ថែម schiil របស់អ្នក ហើយមើលអនុស្សាវរីយ៍តាមប្រតិទិន។",
+      "description": "ពេលវេលាតូចមួយក្នុងថ្ងៃរបស់អ្នក ក្លាយជាផ្នែកនៃស្នាដៃរួម។\n\nSchiild ជាកំណត់ហេតុរូបថតប្រចាំថ្ងៃ។ ចែករំលែករូបថតមួយសន្លឹក ដែលហៅថា schiil ក្នុង atelier របស់អ្នក ហើយបង្កើតស្នាដៃភីកសែលរួមគ្នា ដែលហៅថា schiild។\n\nបង្កើត atelier\nបង្កើត atelier ជាមួយមិត្តភក្តិ ហើយចែករំលែកកូដអញ្ជើញ។ អ្នកអាចកំណត់ប្រធានបទ ឬឱ្យម្នាក់ៗថតអ្វីដែលខ្លួនចូលចិត្តក្នុងជីវិតប្រចាំថ្ងៃ។\n\nកត់ត្រា schiil ថ្ងៃនេះ\nថតរូបដោយកាមេរ៉ាក្នុងកម្មវិធី ហើយបន្ថែម schiil មួយសន្លឹកក្នុងមួយថ្ងៃ សម្រាប់ atelier នីមួយៗ។ រូបថតនឹងត្រូវបញ្ចូលក្នុងស្នាដៃរួម បន្ទាប់ពីអ្នកគ្រប់គ្រងពិនិត្យ និងអនុម័ត។ រូបថតនៅតែជាឯកជននៅពេលរង់ចាំ។ ការអនុម័តនៅពេលក្រោយអាចធ្វើបច្ចុប្បន្នភាពស្នាដៃតាមកាលបរិច្ឆេទដើម។\n\nចូលរួម GLOBAL SCHIILD\nបើចង់ អ្នកអាចបន្ថែម schiil មួយសន្លឹកទៅក្នុង GLOBAL SCHIILD ប្រចាំថ្ងៃ។ មើលស្នាដៃទាំងមូល រួចពង្រីកដើម្បីរកផ្នែករបស់អ្នក។\n\nរំលឹកថ្ងៃកន្លងមក\nមើលស្នាដៃរបស់ atelier និង GLOBAL SCHIILD តាមកាលបរិច្ឆេទក្នុងប្រតិទិនបណ្ណសារ។\n\nចុះឈ្មោះ និងចូលប្រើជាមួយ Apple, LINE ឬ WhatsApp។ អ្នកអាចមើល atelier សាធារណៈ និង GLOBAL SCHIILD ដោយមិនចាំបាច់ចូលគណនី។ ការថតរូបត្រូវការការអនុញ្ញាតប្រើកាមេរ៉ា និងការតភ្ជាប់អ៊ីនធឺណិត។",
+      "keywords": "រូបថត,កំណត់ហេតុ,អនុស្សាវរីយ៍,ប្រតិទិន,សិល្បៈ,atelier,មិត្តភក្តិ",
+      "supportUrl": "https://schiild.app/support.html",
+      "marketingUrl": "https://schiild.app/",
+      "privacyPolicyUrl": "https://schiild.app/privacy.html",
+      "reason": "Khmer is not supported as App Store metadata. App language remains available."
+    }
+  ]
+}
