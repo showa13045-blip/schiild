@@ -1,6 +1,7 @@
 import AtelierNameLabel from './AtelierNameLabel';
 import {isWeekPreview} from './preview-mode.ts';
 // DEMO ONLY. Reuse actual camera posts explicitly; never use dummy participant photos.
+import PostingRules from './PostingRules';
 import React,{useEffect,useState} from 'react';
 import {t} from './copy';
 import {shortDate} from './language';
@@ -18,6 +19,7 @@ type RemotePosts={day:string;globalRecorded:boolean;sources:Omit<Source,'online'
 const sourceKey=(value:{code:string;online:boolean})=>`${value.online?'shared':'local'}/${value.code}`;
 export default function DailyPostsPage({collection,initialSource,onLocalReuse,onRefresh,onBack}:{collection:Collection;initialSource?:PostSelection;onLocalReuse:(day:string,photo:string,codes:string[])=>Result[];onRefresh:()=>void;onBack:()=>void}){
  const [remote,setRemote]=useState<RemotePosts|null>(null),[selected,setSelected]=useState(initialSource?sourceKey(initialSource):''),[photo,setPhoto]=useState<string|null>(null),[chosen,setChosen]=useState<string[]>([]),[confirm,setConfirm]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[results,setResults]=useState<Result[]>([]);
+ const [rulesAccepted,setRulesAccepted]=useState(false);
  const [chooseGlobal,setChooseGlobal]=useState(false);
  const localEntries=[...collection.ateliers,...(collection.departed??[])].filter(entry=>!entry.online);
  const sources:Source[]=[...(remote?.sources??[]).map(value=>({...value,online:true})),...localEntries.filter(entry=>entry.state.photo).map(entry=>({code:entry.code,name:entry.name,day:entry.state.day,online:false}))];
@@ -29,14 +31,14 @@ export default function DailyPostsPage({collection,initialSource,onLocalReuse,on
  async function refresh(signal?:AbortSignal){const next=await sharedRequest<RemotePosts>('posts',{},signal);setRemote(next);}
  useEffect(()=>{const controller=new AbortController();void refresh(controller.signal).catch(cause=>{if(!controller.signal.aborted)setError(cause instanceof Error?cause.message:t('demo.shared.unavailable'));});return()=>controller.abort();},[]);
  useEffect(()=>{
-  setPhoto(null);setChosen([]);setChooseGlobal(false);setConfirm(false);setError('');setResults([]);if(!source)return;
+  setRulesAccepted(false);setPhoto(null);setChosen([]);setChooseGlobal(false);setConfirm(false);setError('');setResults([]);if(!source)return;
   const controller=new AbortController();
   if(!source.online){setPhoto(localEntries.find(entry=>entry.code===source.code)?.state.photo??null);return()=>controller.abort();}
   void sharedRequest<{photo:string}>('post.photo',{sourceCode:source.code,day:source.day},controller.signal).then(value=>setPhoto(value.photo)).catch(cause=>{if(!controller.signal.aborted)setError(cause instanceof Error?cause.message:t('demo.shared.unavailable'));});
   return()=>controller.abort();
  },[selected,source?.day]);
  async function submit(){
-  if(!source||!photo||!canSubmit||busy)return;setBusy(true);setError('');
+  if(!source||!photo||!canSubmit||!rulesAccepted||busy)return;setBusy(true);setError('');
   try{
    const next:Result[]=[],online=chosenTargets.filter(target=>target.online),local=chosenTargets.filter(target=>!target.online);
    if(globalChosen){try{await sharedRequest('global.record',{day:source.day,...(source.online?{sourceCode:source.code}:{photo})});next.push({code:'GLOBAL',name:t('demo.posts.global_target'),done:true});}catch(cause){next.push({code:'GLOBAL',name:t('demo.posts.global_target'),done:false,message:cause instanceof Error?cause.message:t('demo.shared.unavailable')});}}
@@ -61,6 +63,6 @@ export default function DailyPostsPage({collection,initialSource,onLocalReuse,on
   {error&&<p className="error" role="alert">{error}</p>}
   {initialSource&&<button className="button secondary" disabled={busy} onClick={onBack}>{t('demo.shared.back')}</button>}
   <HelpDetails><p>{t('demo.posts.rule')}</p><p>{t('demo.posts.global_note')}</p></HelpDetails>
-  {confirm&&source&&photo&&<div className="modal-shade"><section className="dialog" role="dialog" aria-modal="true" aria-labelledby="reuse-title"><h2 id="reuse-title">{t('demo.posts.continue_global')}</h2><img className="confirm-photo" src={photo} alt={t('demo.posts.photo',{name:source.name})}/><p>{t('demo.posts.confirm')}</p><ul>{globalChosen&&<li>{t('demo.posts.global_target')}</li>}{chosenTargets.map(target=><li key={sourceKey(target)}>{target.name}</li>)}</ul><p>{t('demo.posts.irreversible')}</p>{error&&<p className="error" role="alert">{error}</p>}<button className="button" disabled={busy||!canSubmit} onClick={()=>void submit()}>{t(busy?'common.loading':'camera.confirm.submit')}</button><button className="button secondary" disabled={busy} onClick={()=>setConfirm(false)}>{t('camera.confirm.back')}</button></section></div>}
+  {confirm&&source&&photo&&<div className="modal-shade"><section className="dialog" role="dialog" aria-modal="true" aria-labelledby="reuse-title"><h2 id="reuse-title">{t('demo.posts.continue_global')}</h2><img className="confirm-photo" src={photo} alt={t('demo.posts.photo',{name:source.name})}/><p>{t('demo.posts.confirm')}</p><ul>{globalChosen&&<li>{t('demo.posts.global_target')}</li>}{chosenTargets.map(target=><li key={sourceKey(target)}>{target.name}</li>)}</ul><p>{t('demo.posts.irreversible')}</p><PostingRules checked={rulesAccepted} onChange={setRulesAccepted}/>{error&&<p className="error" role="alert">{error}</p>}<button className="button" disabled={busy||!canSubmit||!rulesAccepted} onClick={()=>void submit()}>{t(busy?'common.loading':'camera.confirm.submit')}</button><button className="button secondary" disabled={busy} onClick={()=>setConfirm(false)}>{t('camera.confirm.back')}</button></section></div>}
  </section>;
 }

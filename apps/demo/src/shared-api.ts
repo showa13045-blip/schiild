@@ -1,3 +1,6 @@
+import {isReviewMode} from './review-mode';
+import {POSTING_POLICY_VERSION,postingCopy} from '../../ios/server/posting-policy.mjs';
+import {currentLanguage} from './language';
 import {browserStorage,browserSessionStorage,isWeekPreview} from './preview-mode.ts';
 import {clearAccountStores,ACCOUNT_ERASE_EVENT} from './account-storage.ts';
 import {t} from './copy';
@@ -5,7 +8,7 @@ import type {Work} from './model';
 import type {Area} from './area';
 
 export type Visibility='private'|'public';
-export type SharedState={visibility:Visibility;concept:string;defaultConcept:string;code:string;name:string;capacity:number;members:number;day:string;seed:number;slot:number;postedSlots:number[];hasPhoto:boolean;canGenerate:boolean;area:Area;status:'open'|'generating'|'ready';works:{concept?:string;day:string;seed:number;count:number;index:number;custody:'self'|'other';area:Area}[]};
+export type SharedState={moderationStatus?:string;visibility:Visibility;concept:string;defaultConcept:string;code:string;name:string;capacity:number;members:number;day:string;seed:number;slot:number;postedSlots:number[];hasPhoto:boolean;canGenerate:boolean;area:Area;status:'open'|'generating'|'ready';works:{concept?:string;day:string;seed:number;count:number;index:number;custody:'self'|'other';area:Area}[]};
 export type DirectoryAtelier={code:string;name:string;capacity:number;concept:string;members:number;total:number};
 export type DirectoryPage={ateliers:DirectoryAtelier[];nextCursor:string|null};
 export type SharedPreview={concept?:string;code:string;name:string;capacity:number;members:number;total:number;online:true};
@@ -40,12 +43,13 @@ export function credential(){
 export async function sharedRequest<T=SharedState>(action:string,values:Record<string,unknown>={},signal?:AbortSignal):Promise<T>{
  if(isWeekPreview){const {weekRequest}=await import('./week-preview');return weekRequest<T>(action,values,signal);}
  // Public API URL only. Secrets are never part of Expo's public environment.
- const endpoint=process.env.EXPO_PUBLIC_DEMO_API_URL||'/.netlify/functions/atelier';
+ const endpoint=isReviewMode?'/api/review':process.env.EXPO_PUBLIC_DEMO_API_URL||'/.netlify/functions/atelier';
  const requestCredential=credential(),generation=identityGeneration;
- const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${requestCredential}`},body:JSON.stringify({action,...values}),signal});
+ const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${requestCredential}`},body:JSON.stringify({action,...(['post','reuse','global.record'].includes(action)?{policyVersion:POSTING_POLICY_VERSION}:{}),...values}),signal});
  let body;try{body=await response.json();}catch{throw Error(t('demo.shared.unavailable'));}
  if(!response.ok){
   const key=body.error;
+  if(key==='posting_rules_required')throw new SharedError(key,postingCopy[currentLanguage()].agree);
   if(typeof key==='string'&&/^apple_invalid_a0[1-9]$/.test(key))throw new SharedError(key,t('demo.line.invalid').replaceAll('LINE','Apple')+' ['+key.slice(-3).toUpperCase()+']');
   if(typeof key==='string'&&/^(apple|whatsapp)_(invalid|expired|conflict|unavailable|not_registered|registered)$/.test(key)){
    const [provider,...suffix]=key.split('_'),messages={invalid:'demo.line.invalid',expired:'demo.line.expired',conflict:'demo.line.conflict',unavailable:'demo.line.unavailable',not_registered:'demo.line.not_registered',registered:'demo.line.registered'} as const;

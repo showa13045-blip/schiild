@@ -1,3 +1,4 @@
+import {POSTING_POLICY_VERSION,postingCopy} from '../../ios/server/posting-policy.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
@@ -9,7 +10,7 @@ const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.
 function fixture(){
  const memory=()=>{const data=Object.create(null);return new Proxy(data,{get(target,key){if(key==='getItem')return key=>target[key]??null;if(key==='setItem')return (key,value)=>target[key]=String(value);if(key==='removeItem')return key=>delete target[key];return target[key];}});};
  const storage=memory(),session=memory(),events=[],exports={};let complete;storage.setItem('schiild.account.session.v2','a'.repeat(64));
- vm.runInNewContext(compiled,{exports,process:{env:{}},Event,Date,DOMException,window:{dispatchEvent:event=>events.push(event.type)},fetch:()=>new Promise(resolve=>complete=resolve),require(name){if(name==='./preview-mode.ts')return {isWeekPreview:false,browserStorage:()=>storage,browserSessionStorage:()=>session};if(name==='./account-storage.ts')return {clearAccountStores,ACCOUNT_ERASE_EVENT};if(name==='./copy')return {t:key=>key};throw Error('Unexpected module '+name);}});
+ vm.runInNewContext(compiled,{exports,process:{env:{}},Event,Date,DOMException,window:{dispatchEvent:event=>events.push(event.type)},fetch:()=>new Promise(resolve=>complete=resolve),require(name){if(name==='./review-mode')return {isReviewMode:false};if(name==='./language')return {currentLanguage:()=>'ja'};if(name==='../../ios/server/posting-policy.mjs')return {POSTING_POLICY_VERSION,postingCopy};if(name==='./preview-mode.ts')return {isWeekPreview:false,browserStorage:()=>storage,browserSessionStorage:()=>session};if(name==='./account-storage.ts')return {clearAccountStores,ACCOUNT_ERASE_EVENT};if(name==='./copy')return {t:key=>key};throw Error('Unexpected module '+name);}});
  return {api:exports,events,storage,session,fail(error){complete({ok:false,json:async()=>({error})});},succeed(body){complete({ok:true,json:async()=>body});}};
 }
 test('a delayed deleted/expired response for an old session cannot erase a freshly signed-in account',async()=>{

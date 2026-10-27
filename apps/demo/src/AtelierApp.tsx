@@ -1,3 +1,4 @@
+import {isReviewMode} from './review-mode';
 import PublicAtelierPage from './PublicAtelierPage';
 import {rememberAuthDestination,takeAuthDestination} from './auth-return';
 import AtelierNameLabel from './AtelierNameLabel';
@@ -54,10 +55,10 @@ export default function AtelierApp(){
  const [postSelection,setPostSelection]=useState<PostSelection|undefined>();
  const [language,setLanguage]=useState(readLanguage);activateLanguage(language);
  useEffect(()=>{document.documentElement.lang=language;},[language]);
- const [collection,setCollection]=useState<Collection|null>(null),[view,setView]=useState('experience'),[name,setName]=useState(''),[capacity,setCapacity]=useState(12),[input,setInput]=useState(''),[invitation,setInvitation]=useState<Invitation|null>(null),[sharing,setSharing]=useState<Atelier|null>(null),[deleting,setDeleting]=useState<string|null>(null),[message,setMessage]=useState(''),[busy,setBusy]=useState(false);
+ const [collection,setCollection]=useState<Collection|null>(null),[view,setView]=useState(isReviewMode&&new URLSearchParams(location.search).has('login')?'auth':'experience'),[name,setName]=useState(''),[capacity,setCapacity]=useState(12),[input,setInput]=useState(''),[invitation,setInvitation]=useState<Invitation|null>(null),[sharing,setSharing]=useState<Atelier|null>(null),[deleting,setDeleting]=useState<string|null>(null),[message,setMessage]=useState(''),[busy,setBusy]=useState(false);
  const lock=useRef(false),accountSequence=useRef(0);
  const [navigation,setNavigation]=useState<Navigation>({screen:'home',revision:0}),[globalSelection,setGlobalSelection]=useState<GlobalSelection>({day:demoDay()}),[account,setAccount]=useState<Account|null>(null),[accountRevision,setAccountRevision]=useState(0),[settings,setSettings]=useState(preferences);
- const participant=isWeekPreview||Boolean(account?.lineLinked||account?.appleLinked||account?.whatsappLinked);
+ const participant=isWeekPreview||isReviewMode&&Boolean(account)||Boolean(account?.lineLinked||account?.appleLinked||account?.whatsappLinked);
  useEffect(()=>{const required=()=>{accountSequence.current++;setAccount(null);setView('auth');};window.addEventListener('schiild:line-required',required);return()=>window.removeEventListener('schiild:line-required',required);},[]);
  useEffect(()=>{const removed=()=>finishDeletion();window.addEventListener('schiild:account-deleted',removed);return()=>window.removeEventListener('schiild:account-deleted',removed);},[]);
  useEffect(()=>{const expired=()=>{accountSequence.current++;clearSession();setAccount(null);setAccountRevision(value=>value+1);setCollection(current=>current?{...current,ateliers:current.ateliers.filter(entry=>!entry.online),selected:current.ateliers.find(entry=>!entry.online)?.code??''}:current);setView('auth');};window.addEventListener('schiild:session-expired',expired);return()=>window.removeEventListener('schiild:session-expired',expired);},[]);

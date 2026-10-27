@@ -1,44 +1,52 @@
-# App Review用メモ（提出準備中）
+# App Review用メモ
 
-この文書は未提出。安全対策・連絡先の確認後、実装済みの内容だけをApp Store Connectへ転記する。
-EU27か国は配信対象外。無料、承認後は手動公開。
+2026-10-27。審査用資格情報と操作説明をApp Store Connectの下書きへ保存する。
+提出は未実行。EU27か国は対象外、無料、承認後は手動公開。
 
 ## English review instructions
 
-Schiild is a daily photo journal with shared pixel artworks. The app has no purchases,
-advertising, trading, direct messaging, comments, likes, or follower counts.
+Schiild is a daily photo journal with shared pixel artworks. There are no purchases,
+advertisements, trading, direct messages, comments, likes or follower counts.
 
-Public ateliers and GLOBAL SCHIILD can be viewed without an account. To test account
-features on iPhone or iPad, select Sign up with Apple. This opens the native Apple
-authentication sheet. Sign in with Apple is also available for an existing Schiild
-account. Creating an account through LINE or WhatsApp is optional; Apple registration
-does not require either app or a phone number.
+For review access, tap the Schiild logo, then App Review on the sign-in screen.
+Use the supplied review_one username and password. The screen is visibly labelled
+App Review. Its accounts, memberships, original photos, artworks, queue and sessions
+are isolated from ordinary users. Review credentials cannot access ordinary data.
 
-1. Register with Apple, open Profile, and set a display name.
-2. Create an atelier. Name it and optionally set its concept and visibility.
-3. Select Record today's schiil, allow the camera, take a photo, and confirm it.
-4. On the destination page, optionally select GLOBAL SCHIILD or another eligible atelier.
-5. The normal artwork cycle follows the UTC day boundary. The one-week example
-   contains fictional records to demonstrate the calendar and artwork explorer.
-   This example is read-only and is labelled as fictional. It does not provide a
-   substitute for testing account creation, real posting, or deletion.
-6. Open GLOBAL SCHIILD and pinch to zoom or drag to move around the image.
-7. Profile > Settings > Delete account displays a selectable account ID and a Copy ID
-   action. Enter that ID and confirm. Apple authentication is required again before
-   revoking the authorization and deleting the account and its original photos.
-   Generated shared artworks remain as anonymous records. Old memberships and profile
-   details are not restored if a new account is explicitly registered later.
+1. Create an atelier, choose its name, optional concept and visibility.
+2. Open Record today's schiil, allow the camera and take a photo. Read and accept
+   the posting rules on the existing confirmation screen, then confirm.
+3. Optionally select GLOBAL SCHIILD or another eligible atelier as a destination.
+   Each destination is explicit. Photos are private while awaiting review.
+4. In Profile > Settings > Review photos, open the submitted image and approve it
+   for the atelier and, if selected, GLOBAL SCHIILD. review_one is an operator only
+   inside this isolated environment. Ordinary operators are separately configured.
+5. Return to the atelier. Its creator can generate the artwork after approval.
+   Open it to see the reveal, and browse it from the archive calendar.
+6. In GLOBAL SCHIILD, pinch and drag to explore; tap your area to zoom in.
+7. Profile > Settings > Delete account offers a selectable account ID and Copy ID.
+   Enter the displayed ID and the supplied review password to delete this test account.
+   Original photos, memberships, consent and queue records are removed. Shared artworks
+   remain anonymous. Signing in again creates a new empty test account.
 
-The installed app uses a WKWebView for its interface, with native Sign in with Apple,
-system authentication sessions for LINE, camera permission, sharing, and clipboard
-integration. It requires internet access. Native push notifications are not currently
-implemented. There is no unrestricted browser in the app.
+To test ordinary Sign in with Apple, exit App Review and choose Sign up with Apple
+in the normal sign-in screen. It opens the native authentication sheet; no LINE or
+WhatsApp account or phone number is needed. Normal Apple-account deletion requires
+native Apple reauthentication. LINE and WhatsApp are optional alternatives.
 
-## 転記前に解消する項目
+Late operator approvals update the original day's artwork, without moving photos
+into another day, changing an already selected custodian or altering other rendered
+contributions. The one-week example is separately labelled fictional and read-only;
+it is not the full-function review environment.
 
-- 審査連絡先（氏名・電話・メール）。本人指定を待つ。
-- 審査側の全機能アクセス方法を確認。架空の週表示を全機能デモと申告しない。
-- Appleの入力チェックで審査用ユーザー名・パスワードが要求された。以下のApple登録手順は説明案であり、これだけで提出可能・承認済みと扱わない。通常の連携必須認証を無断で緩めず、隔離したレビューアクセス等の方針を本人に確認する。
-- 投稿前審査・通報・ブロックは未実装。完成・検証するまで対応済みと書かない。
-- サポート・プライバシーの公開ページを更新し、アプリ内からアクセス可能にする。
-- ストア画像が必要な場合は実機の画面を使う。ブラウザ画像を実機撮影と扱わない。
+The app uses WKWebView plus native Apple authentication, LINE authentication sessions,
+camera permissions, clipboard and sharing. Internet access is required. Native push
+notifications are not currently implemented.
+
+## 残作業
+
+- Kapsoの実設定を確認してモデル改善利用を無効化し、第三者収集を含むプライバシー申告を確定する。
+- 作品からのアプリ内通報・悪質な利用者のブロック・承認済み内容への対応を完成させる。
+- 実機の撮影・投稿・削除の確認と、提出用iPad／iPhone画像を用意する。
+- 投稿ルールとは別に、配信権の最終申告を本人が確認する。
+- 完了前にこれらを対応済みと申告しない。

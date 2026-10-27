@@ -1,3 +1,4 @@
+import PostingRules from './src/PostingRules';
 import AtelierNameLabel from './src/AtelierNameLabel';
 import React,{useEffect,useRef,useState} from 'react';
 import {t} from './src/copy';
@@ -35,9 +36,10 @@ function Button({children,onClick,secondary=false,disabled=false}:{children:Reac
 export function Camera({day,atelier,concept,onBack,onSubmit,shared=false}:{day:string;atelier:string;concept?:string;onBack:()=>void;onSubmit:(url:string)=>void|Promise<void>;shared?:boolean}){
  const video=useRef<HTMLVideoElement>(null),stream=useRef<MediaStream|null>(null);
  const [status,setStatus]=useState<'idle'|'loading'|'ready'|'denied'>('idle'),[preview,setPreview]=useState<string|null>(null),[failed,setFailed]=useState(false),[sending,setSending]=useState(false),[sendError,setSendError]=useState('');
+ const [rulesAccepted,setRulesAccepted]=useState(false);
  const submitLock=useRef(false),attempt=useRef(0),startLock=useRef(false);
  const [problem,setProblem]=useState<CameraProblem>('permission'),[help,setHelp]=useState(false);
- async function submit(){if(!preview||submitLock.current)return;submitLock.current=true;setSending(true);setSendError('');try{await onSubmit(preview);}catch(error){setSendError(error instanceof Error?error.message:t('error.upload_failed'));}finally{submitLock.current=false;setSending(false);}}
+ async function submit(){if(!preview||!rulesAccepted||submitLock.current)return;submitLock.current=true;setSending(true);setSendError('');try{await onSubmit(preview);}catch(error){setSendError(error instanceof Error?error.message:t('error.upload_failed'));}finally{submitLock.current=false;setSending(false);}}
  function stop(){stream.current?.getTracks().forEach(track=>track.stop());stream.current=null;if(video.current)video.current.srcObject=null;}
  useEffect(()=>()=>{attempt.current++;stream.current?.getTracks().forEach(track=>track.stop());},[]);
  async function start(){
@@ -65,7 +67,7 @@ export function Camera({day,atelier,concept,onBack,onSubmit,shared=false}:{day:s
   {!preview&&help&&status==='denied'&&<Button onClick={()=>{void start();document.querySelector('.camera-page')?.scrollIntoView({block:'start'});}}>{t('demo.camera.retry')}</Button>}
   {!preview&&<button className="shutter" disabled={status!=='ready'} aria-label={t('onboarding.1.title')} onClick={capture}><span/></button>}
   {failed&&<p role="alert">{t('camera.capture_failed')}</p>}
-  {preview&&<div className="modal-shade"><section className="dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title"><img className="confirm-photo" src={preview} alt={t('camera.date',{date:date(day)})}/><h2 id="confirm-title">{t('camera.confirm.title')}</h2><p>{t('camera.confirm.body',{ateliers:currentLanguage()==='ja'?`「${atelier}」`:atelier})}</p>{sendError&&<p className="error" role="alert">{sendError}</p>}<Button disabled={sending} onClick={()=>void submit()}>{t(sending?'common.loading':'camera.confirm.submit')}</Button><Button secondary disabled={sending} onClick={()=>{setPreview(null);setStatus('idle');}}>{t('camera.confirm.back')}</Button></section></div>}
+  {preview&&<div className="modal-shade"><section className="dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title"><img className="confirm-photo" src={preview} alt={t('camera.date',{date:date(day)})}/><h2 id="confirm-title">{t('camera.confirm.title')}</h2><p>{t('camera.confirm.body',{ateliers:currentLanguage()==='ja'?`「${atelier}」`:atelier})}</p><PostingRules checked={rulesAccepted} onChange={setRulesAccepted}/>{sendError&&<p className="error" role="alert">{sendError}</p>}<Button disabled={sending||!rulesAccepted} onClick={()=>void submit()}>{t(sending?'common.loading':'camera.confirm.submit')}</Button><Button secondary disabled={sending} onClick={()=>{setPreview(null);setRulesAccepted(false);setStatus('idle');}}>{t('camera.confirm.back')}</Button></section></div>}
  </section>;
 }
 

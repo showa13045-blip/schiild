@@ -137,7 +137,7 @@ export function createAtelierService(store,{now=()=>Date.now(),images,memberForC
     if(memberCount(room)>=room.capacity)fail(409,'full');
     const today=current(room),previous=participants(room,today).indexOf(member);
     // A departed participant can return to their own recorded slot today.
-    let slot=previous>=0&&!room.members[previous]?previous:room.members.findIndex((value,n)=>!value&&!today.posts[n]);
+    let slot=previous>=0&&!room.members[previous]?previous:room.members.findIndex((value,n)=>!value&&!today.posts[n]&&!today.pendingSlots?.[n]);
     if(slot<0){if(room.members.length>=room.capacity)fail(409,'slots_reserved');slot=room.members.length;}
     room.members[slot]=member;
     if(room.days[today.day])room.days[today.day].members[slot]=member;

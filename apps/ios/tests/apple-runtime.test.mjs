@@ -1,4 +1,5 @@
 // Optional local workerd integration, never contacts production accounts or Apple.
+import {POSTING_POLICY_VERSION} from '../server/posting-policy.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createRequire,registerHooks} from 'node:module';
@@ -32,7 +33,7 @@ test('deployed-revision bridge registers, posts, revokes and erases an Apple acc
   const instance=new runtime.AtelierDirectory({storage},env);env.ATELIERS={idFromName:()=>1,get:()=>instance};
   mf={database:db,dispatchFetch:async(url,options)=>runtime.default.fetch(new Request(url,options),env,{waitUntil(){}}),dispose:async()=>{globalThis.fetch=fetchBefore;hook.deregister();db.close();}};
  }else mf=new Miniflare(convertV4MiniflareOptions({name:'schiild-ios-test',scriptPath:stage+'/runtime.mjs',modules:true,compatibilityDate:'2026-10-08',compatibilityFlags:['nodejs_compat'],durableObjects:{ATELIERS:{className:'AtelierDirectory',useSQLite:true}},bindings:{IMAGE_BACKEND:'durable-sqlite',ALLOWED_ORIGINS:'https://schiild.app',APPLE_LOGIN_CONFIG:JSON.stringify(config)},outboundService:outbound}));
- async function call(action,values={},credential='1'.repeat(64),expected=200){const response=await mf.dispatchFetch('https://schiild.app/api/atelier',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+credential},body:JSON.stringify({action,...values})});const body=await response.json();assert.equal(response.status,expected,JSON.stringify(body));return body;}
+ async function call(action,values={},credential='1'.repeat(64),expected=200){const response=await mf.dispatchFetch('https://schiild.app/api/atelier',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+credential},body:JSON.stringify({action,...values,...(['post','reuse','global.record'].includes(action)?{policyVersion:POSTING_POLICY_VERSION}:{})})});const body=await response.json();assert.equal(response.status,expected,JSON.stringify(body));return body;}
  async function authenticate(intent,credential='1'.repeat(64),extra={},expected=200){
   const challenge=await call('account.apple.start',{intent,...extra},credential);
   grantToken=await new SignJWT({nonce:challenge.nonce}).setProtectedHeader({alg:'RS256',kid:'runtime'}).setIssuer('https://appleid.apple.com').setAudience(config.clientId).setSubject('runtime-apple-person').setIssuedAt().setExpirationTime('5m').sign(apple.privateKey);

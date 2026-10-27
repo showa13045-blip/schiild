@@ -1,3 +1,4 @@
+import ModerationNotice from './ModerationNotice';
 import React,{useCallback,useEffect,useState} from 'react';
 import {t} from './copy';
 import {shortDate} from './language';
@@ -9,7 +10,7 @@ import AreaDisplay from './AreaDisplay';
 import GlobalExplorer from './GlobalExplorer';
 import type {GlobalSchiil} from './global-schiils';
 export type GlobalSelection={day:string;sample?:Work};
-type GlobalWork={day:string;image:string|null;schiilImage?:string;count:number;ateliers:number;final:boolean;x?:number;y?:number;positions?:number[];outputSize?:number;layoutRevision?:string};
+type GlobalWork={moderationStatus?:string;day:string;image:string|null;schiilImage?:string;count:number;ateliers:number;final:boolean;x?:number;y?:number;positions?:number[];outputSize?:number;layoutRevision?:string};
 export default function GlobalPage({selection,revision}:{selection:GlobalSelection;revision:number}){
  const [work,setWork]=useState<GlobalWork|null>(null),[error,setError]=useState(''),[zoom,setZoom]=useState(false),[reload,setReload]=useState(0);
  useEffect(()=>{
@@ -27,7 +28,7 @@ export default function GlobalPage({selection,revision}:{selection:GlobalSelecti
  const day=selection.day,short=shortDate,mine=work?.x!==undefined&&work?.y!==undefined,x=work?.x??0,y=work?.y??0,resolution=work?.outputSize||256,total=resolution*resolution;
  return <section className="global-page" data-testid="global-page" data-day={day}>
   <div className="wall-label">{t('global.label')}</div><h1>{day.replaceAll('-',' / ')}</h1><p className="window">{t('atelier.window',{start:short(day)+' 09:00',end:short(dayAfter(day))+' 09:00'})}</p>
-  {selection.sample&&<p className="sample-note">{t('demo.global.sample')}</p>}
+  <ModerationNotice status={work?.moderationStatus}/>{selection.sample&&<p className="sample-note">{t('demo.global.sample')}</p>}
   {error&&<p className="error" role="alert">{error}</p>}
   {!work&&!error&&<p>{t('common.loading')}</p>}
   {work&&!work.image&&<p>{t('demo.global.empty')}</p>}

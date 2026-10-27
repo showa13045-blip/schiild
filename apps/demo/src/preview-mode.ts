@@ -1,5 +1,6 @@
 // DEMO ONLY. The week example has an isolated, in-memory browser session.
 // It never reads, erases or writes the normal demo's account or local records.
+import {isReviewMode,reviewStorage} from './review-mode.ts';
 export const isWeekPreview=typeof location!=='undefined'&&location.pathname==='/week/';
 export const WEEK_LAST_DAY='2026-10-19';
 export const demoDay=()=>isWeekPreview?WEEK_LAST_DAY:new Date().toISOString().slice(0,10);
@@ -18,5 +19,5 @@ function memoryStorage():Storage{
  }) as unknown as Storage;
 }
 const local=memoryStorage(),session=memoryStorage();
-export const browserStorage=()=>isWeekPreview?local:localStorage;
-export const browserSessionStorage=()=>isWeekPreview?session:sessionStorage;
+export const browserStorage=()=>isWeekPreview?local:isReviewMode?reviewStorage(localStorage):localStorage;
+export const browserSessionStorage=()=>isWeekPreview?session:isReviewMode?reviewStorage(sessionStorage):sessionStorage;
