@@ -1,6 +1,6 @@
 # App Review用メモ
 
-2026-10-27。審査用資格情報と操作説明をApp Store Connectの下書きへ保存する。
+2026-10-28。審査用資格情報と操作説明をApp Store Connectの下書きへ保存する。
 提出は未実行。EU27か国は対象外、無料、承認後は手動公開。
 
 ## English review instructions
@@ -29,7 +29,7 @@ are isolated from ordinary users. Review credentials cannot access ordinary data
    Original photos, memberships, consent and queue records are removed. Shared artworks
    remain anonymous. Signing in again creates a new empty test account.
 
-To test content reports, open Report below an atelier artwork or GLOBAL SCHIILD.
+To test content reports, open Report or block below an atelier artwork or GLOBAL SCHIILD.
 Select the schiil by tapping it or entering its 1-based X/Y coordinates, choose a
 reason and send. Reports alone do not remove content. In Profile > Settings >
 Review reports, open the selected contribution, enter an internal decision note
@@ -37,7 +37,11 @@ and remove that schiil or dismiss the report. Only the selected destination is
 affected. Other contributions and the custodian remain. GLOBAL is compacted from
 the remaining schiils, and reports continue to identify the same schiil if its
 coordinates later change. These actions use isolated review data and the supplied
-review_one account. Blocking abusive users is not yet implemented.
+review_one account. To block a person, select their schiil in Report or block and
+choose Block this person. Their contributions are hidden only from your view in
+atelier works, archives and GLOBAL zoom; shared works and coordinates stay intact.
+The preference persists after signing in again. Settings > Blocked people offers
+Unblock. Account deletion erases your own block list.
 
 To test ordinary Sign in with Apple, exit App Review and choose Sign up with Apple
 in the normal sign-in screen. It opens the native authentication sheet; no LINE or
@@ -56,7 +60,7 @@ notifications are not currently implemented.
 ## 残作業
 
 - Kapsoの実設定は確認済みでモデル改善はオフ。会話保存は期限なし。認証メッセージ等の第三者収集をApp Privacyへ追加し、Meta側の警告と実機のWhatsAppログインを確認する。
-- 悪質な利用者のブロックを完成させる。作品からの通報と、選択した公開先のシールだけを除去する運営対応は実装済み。
+- 利用者ブロックの実機確認。本人の画面だけで非表示・再ログイン後の維持・設定からの解除を実装し、通常／隔離審査環境をローカル検証済み。作品からの通報とシール単位の運営除去も実装済み。
 - 実機の撮影・投稿・削除の確認と、提出用iPad／iPhone画像を用意する。
 - 投稿ルールとは別に、配信権の最終申告を本人が確認する。
 - 完了前にこれらを対応済みと申告しない。
@@ -72,4 +76,4 @@ App Privacyへ認証メッセージとカスタマーサポートを追加し、
 
 ## 2026-10-28 提出準備
 
-全10言語の掲載原稿を準備し、Apple対応の9言語・11ロケールを保存。クメール語は原稿のみ。App Privacyは9種類の下書きへ更新。公開と審査提出は未実行。新しい完了事項と残作業は [SUBMISSION-HANDOFF.md](./SUBMISSION-HANDOFF.md) に集約。英語審査メモに未実装のブロックを対応済みと書かない。
+全10言語の掲載原稿を準備し、Apple対応の9言語・11ロケールを保存。クメール語は原稿のみ。App Privacyは9種類の下書きへ更新。公開と審査提出は未実行。新しい完了事項と残作業は [SUBMISSION-HANDOFF.md](./SUBMISSION-HANDOFF.md) に集約。ブロックの公開先検証後、英語審査メモをAppleへ保存し、再取得して一致を確認した。

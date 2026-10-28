@@ -50,8 +50,16 @@ test('review data, sessions, images, provider discovery and deletion stay isolat
   assert.equal((await call('review','state',{code:room.code},first.token)).works.length,1);
   assert.equal((await call('review','account.me',{},first.token)).account.ateliers.length,1);
   const review=databases.get('app-store-review-v1');assert.equal(review.prepare('SELECT COUNT(*) AS total FROM posting_consents').get().total,2);
+  if(process.env.IOS_BLOCKS_STAGE){
+   const target=await call('review','safety.target',{target:room.code,day:room.day},first.token),workBefore=await call('review','work',{code:room.code,day:room.day},first.token);
+   const block=await call('review','blocks.add',{target:room.code,day:room.day,selectionKey:target.selections[1].key},first.token);assert.equal(block.blocked,true);assert.notEqual((await call('review','work',{code:room.code,day:room.day},first.token)).image,workBefore.image);assert.equal((await call('review','work',{code:room.code,day:room.day},second.token)).image,workBefore.image);
+   await call('review','blocks.remove',{blockKey:block.key},second.token,404);assert.equal((await call('review','blocks.list',{},first.token)).items.length,1);
+   assert.equal((await call('atelier','global',{day:room.day},first.token)).image,null);
+   for(const path of ['/blocked/','/blocked/app.js']){const response=await runtime.default.fetch(new Request('https://schiild.app'+path),env,{});assert.equal(response.status,200);}
+  }
   const originals=review.prepare('SELECT name FROM photo_members WHERE member=?').all(hash(credential));assert(originals.length>0);
   await call('review','account.delete',{confirmUsername:first.account.username,password},first.token);
+  if(process.env.IOS_BLOCKS_STAGE)assert.equal(review.prepare('SELECT COUNT(*) AS total FROM personal_blocks').get().total,0);
   for(const {name}of originals)assert.equal(review.prepare('SELECT COUNT(*) AS total FROM image_blobs WHERE name=?').get(name).total,0);
   assert.equal(review.prepare('SELECT COUNT(*) AS total FROM posting_consents WHERE member=?').get(hash(credential)).total,0);
   await call('review','account.me',{},first.token,401);

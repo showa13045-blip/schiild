@@ -1,7 +1,7 @@
 // SQLite-backed Durable Object KV adapter. CAS runs atomically, without I/O.
 import {removalChanges,metadataWriteAllowed} from '../server/account-removal.mjs';
 import {roomNotificationEvents} from '../server/notification-events.mjs';
-export function metadataStore(storage,images,{notificationEvents=false,now=()=>Date.now()}={}){
+export function metadataStore(storage,images,{notificationEvents=false,now=()=>Date.now(),beforeAccountRemoval}={}){
  return {
   async listJSON(prefix){return storage.sql.exec('SELECT key,data,etag FROM rooms WHERE key LIKE ?',prefix+'%').toArray().map(row=>({...row,data:JSON.parse(row.data)}));},
   async registerAccount(account){return storage.transactionSync(()=>{
@@ -42,6 +42,7 @@ export function metadataStore(storage,images,{notificationEvents=false,now=()=>D
    const current=storage.sql.exec('SELECT data FROM rooms WHERE key = ?',`accounts/${account.username}`).toArray()[0];
    if(!current||JSON.parse(current.data).member!==account.member)return {modified:false};
    const rows=storage.sql.exec('SELECT key,data FROM rooms').toArray().map(row=>({key:row.key,data:JSON.parse(row.data)}));
+   beforeAccountRemoval?.(storage,account.member,anonymousMember);
    const {writes,deletes,photoKeys}=removalChanges(rows,account,anonymousMember,attemptKeys,options);
    for(const key of deletes)storage.sql.exec('DELETE FROM rooms WHERE key = ?',key);
    for(const [key,data] of writes){const old=storage.sql.exec('SELECT etag FROM rooms WHERE key = ?',key).toArray()[0];storage.sql.exec('INSERT INTO rooms (key,data,etag) VALUES (?,?,?) ON CONFLICT(key) DO UPDATE SET data=excluded.data,etag=excluded.etag',key,JSON.stringify(data),String(Number(old?.etag??0)+1));}
