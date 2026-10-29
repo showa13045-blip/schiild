@@ -1,0 +1,44 @@
+name: iOS simulator screenshots
+on:
+  push:
+    branches: [demo]
+    paths:
+      - .github/workflows/ios-store-captures.yml
+      - apps/ios/scripts/prepare-simulator-capture.mjs
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  capture:
+    runs-on: macos-26
+    timeout-minutes: 55
+    env:
+      CI: 'true'
+      EXPO_NO_TELEMETRY: '1'
+      EXPO_NO_DOCTOR: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install the existing native app dependencies
+        run: pnpm install --frozen-lockfile --filter schiild-ios... --filter demo...
+      - name: Generate the unchanged native project
+        working-directory: apps/ios
+        run: pnpm exec expo prebuild --platform ios --no-install
+      - name: Install native dependencies
+        working-directory: apps/ios/ios
+        run: pod install
+      - name: Add isolated simulator capture harness
+        run: node apps/ios/scripts/prepare-simulator-capture.mjs
+      - name: Build and capture on iPhone and iPad
+        run: bash apps/ios/.simulator-capture/run.sh
+      - name: Save native captures and provenance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schiild-native-store-captures
+          path: apps/ios/.simulator-capture/export
+          retention-days: 1
+          if-no-files-found: error
