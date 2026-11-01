@@ -8,7 +8,7 @@ import type {Work} from './model';
 import type {Area} from './area';
 
 export type Visibility='private'|'public';
-export type SharedState={moderationStatus?:string;visibility:Visibility;concept:string;defaultConcept:string;code:string;name:string;capacity:number;members:number;day:string;seed:number;slot:number;postedSlots:number[];hasPhoto:boolean;canGenerate:boolean;area:Area;status:'open'|'generating'|'ready';works:{concept?:string;day:string;seed:number;count:number;index:number;custody:'self'|'other';area:Area}[]};
+export type SharedState={layoutRects?:import('./engine').Rect[];official?:boolean;memberLimit?:number|null;moderationStatus?:string;visibility:Visibility;concept:string;defaultConcept:string;code:string;name:string;capacity:number;members:number;day:string;seed:number;slot:number;postedSlots:number[];hasPhoto:boolean;canGenerate:boolean;area:Area;status:'open'|'generating'|'ready';works:{concept?:string;day:string;seed:number;count:number;index:number;custody:'self'|'other';area:Area}[]};
 export type DirectoryAtelier={code:string;name:string;capacity:number;concept:string;members:number;total:number};
 export type DirectoryPage={ateliers:DirectoryAtelier[];nextCursor:string|null};
 export type SharedPreview={concept?:string;code:string;name:string;capacity:number;members:number;total:number;online:true};

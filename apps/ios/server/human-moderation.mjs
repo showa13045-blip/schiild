@@ -1,11 +1,11 @@
 // DEMO ONLY. Private original photos enter a queue, never a public work, before approval.
 // Normal and App Review instances use the same queue behavior but separate SQLite data.
 import {createHash,randomInt} from 'node:crypto';
-import {partition,random} from '../../demo/src/engine.ts';
+import {atelierRects,CONTRIBUTOR_LAYOUT} from '../../demo/src/atelier-layout.ts';
 import {isFreeConcept} from '../../demo/src/concept.ts';
 import {workSize} from '../../demo/src/resolution.ts';
 import {roomNotificationEvents} from '../../demo/server/notification-events.mjs';
-import {overlayApprovedTile} from './moderation-png.mjs';
+import {overlayApprovedTile,relocateApprovedTile} from './moderation-png.mjs';
 const digest=value=>createHash('sha256').update(value).digest('hex');
 export function moderationConfig(value,review=false){let config;try{config=JSON.parse(value??'null');}catch{return null;}if(typeof config?.enabled!=='boolean'||!Array.isArray(config.operators)||!config.operators.length||config.operators.some(name=>typeof name!=='string'||!/^[a-z0-9][a-z0-9_-]{2,23}$/.test(name)))return null;return {...config,operators:review?['review_one']:config.operators};}
 export async function moderatorReadiness(store,value,review=false){const config=moderationConfig(value,review);let operatorReady=false;for(const name of config?.operators??[])if((await store.getWithMetadata('accounts/'+name,{type:'json'}))?.data?.member)operatorReady=true;return {enabled:Boolean(config?.enabled),operatorReady};}
@@ -54,9 +54,14 @@ export function humanModeration({store,storage,images,core,globalFactory,ErrorCl
   for(let attempt=0;attempt<12;attempt++){
    const previous=await room(record.target),next=structuredClone(previous.data),day=next.days[record.day];if(!day||(day.members??next.members)[record.slot]!==record.member)fail(409,'moderation_conflict');
    if(day.posts[record.slot]&&day.posts[record.slot]!==record.photo_key)fail(409,'already_recorded');const oldStatus=day.status;if(oldStatus==='generating')fail(409,'retry');day.posts[record.slot]=record.photo_key;if(day.pendingSlots)delete day.pendingSlots[record.slot];
-   const rects=partition(next.capacity,random(day.seed)),size=workSize(day),rect=rects.find(rect=>rect.slot===record.slot),key='works/'+next.code+'/'+record.day;
+   if(oldStatus!=='ready')day.layoutVersion=CONTRIBUTOR_LAYOUT;
+   const rects=atelierRects(next,day),size=workSize(day),rect=rects.find(rect=>rect.slot===record.slot),key='works/'+next.code+'/'+record.day;
    // Existing announced custodian, seed, index and all other pixels stay unchanged.
-   let png;if(oldStatus==='ready'){
+   let png;if(oldStatus==='ready'&&day.layoutVersion===CONTRIBUTOR_LAYOUT){
+    const old=await store.get(key,{type:'arrayBuffer'});if(!old)fail(503,'generation_failed');
+    png=await images.compose(rects,async rect=>{const key=day.posts[rect.slot];if(key==='deleted-photo')return null;const bytes=await store.get(key,{type:'arrayBuffer'});if(!bytes)fail(503,'generation_failed');return bytes;},day.seed,size,record.day);
+    const previousRects=atelierRects(previous.data,previous.data.days[record.day]);for(const to of rects)if(day.posts[to.slot]==='deleted-photo'){const from=previousRects.find(item=>item.slot===to.slot);if(!from)fail(503,'generation_failed');png=relocateApprovedTile(old,png,from,to);}day.outputSize=size;
+   }else if(oldStatus==='ready'){
     const old=await store.get(key,{type:'arrayBuffer'});if(!old)fail(503,'generation_failed');const tile=await images.compose([rect],async()=>photo,day.seed,size,record.day);png=overlayApprovedTile(old,tile,rect);
    }else if(record.day<today()){
     png=await images.compose(rects,async rect=>{const image=day.posts[rect.slot];return image&&image!=='deleted-photo'?store.get(image,{type:'arrayBuffer'}):null;},day.seed,size,record.day);

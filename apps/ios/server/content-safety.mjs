@@ -1,7 +1,7 @@
 // DEMO ONLY. Reports identify an immutable Schiil, never a mutable GLOBAL position.
 // Removal affects its selected destination; original evidence remains private.
 import {createHash,randomBytes} from 'node:crypto';
-import {partition,random} from '../../demo/src/engine.ts';
+import {atelierRects} from '../../demo/src/atelier-layout.ts';
 import {compactGlobal} from '../../demo/src/global-layout.ts';
 import {workSize} from '../../demo/src/resolution.ts';
 import {moderationConfig} from './human-moderation.mjs';
@@ -32,10 +32,10 @@ export function contentSafety({store,storage,images,core,globalFactory,ErrorClas
    return {name:'GLOBAL SCHIILD',size:layout.outputSize,items:layout.pixels.map(pixel=>({...selection(target,day,null,row.data.pixels[pixel.member].source,row.data.pixels[pixel.member].orderKey),x:pixel.position%layout.outputSize,y:Math.floor(pixel.position/layout.outputSize),w:1,h:1}))};
   }
   const {room,record}=await rawRoom(target,day);if(!operator&&room.visibility!=='public'&&!room.members.includes(actor.member))fail(404,'not_found');
-  const hidden=removed(target,day),rects=partition(room.capacity,random(record.seed));
+  const hidden=removed(target,day),rects=atelierRects(room,record);
   return {name:room.name,size:128,items:rects.filter(rect=>record.posts[rect.slot]&&!hidden.some(item=>item.slot===rect.slot)).map(rect=>({...selection(target,day,rect.slot,record.posts[rect.slot].split('/').at(-1)),x:rect.x,y:rect.y,w:rect.w,h:rect.h}))};
  }
- async function maskedAtelier(image,target,day){const hidden=removed(target,day);if(!hidden.length)return image;const {room,record}=await rawRoom(target,day),rects=partition(room.capacity,random(record.seed));let result=Buffer.from(image.split(',')[1],'base64');for(const item of hidden){const rect=rects.find(rect=>rect.slot===item.slot);if(rect){const blank=await images.compose([rect],async()=>null,record.seed,workSize(record),day);result=overlayApprovedTile(result,blank,rect);}}return 'data:image/png;base64,'+result.toString('base64');}
+ async function maskedAtelier(image,target,day){const hidden=removed(target,day);if(!hidden.length)return image;const {room,record}=await rawRoom(target,day),rects=atelierRects(room,record);let result=Buffer.from(image.split(',')[1],'base64');for(const item of hidden){const rect=rects.find(rect=>rect.slot===item.slot);if(rect){const blank=await images.compose([rect],async()=>null,record.seed,workSize(record),day);result=overlayApprovedTile(result,blank,rect);}}return 'data:image/png;base64,'+result.toString('base64');}
  // Reads filter the actual recorded GLOBAL pixels before compacting the layout.
  // Legacy random-order writes merge removed records back into retained evidence.
  function globalStore(){return new Proxy(store,{get(object,property){

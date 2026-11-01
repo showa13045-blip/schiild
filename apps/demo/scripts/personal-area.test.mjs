@@ -4,7 +4,6 @@ import sharp from 'sharp';
 import {createHash} from 'node:crypto';
 import {createAtelierService} from '../server/atelier-service.mjs';
 import {createAtelierService as core} from '../server/atelier-core.mjs';
-import {partition,random} from '../src/engine.ts';
 import {memoryStore} from '../server/memory-store.mjs';
 import {accounts} from '../server/accounts.mjs';
 const first='a'.repeat(64),second='b'.repeat(64),third='c'.repeat(64);
@@ -12,7 +11,8 @@ const member=credential=>createHash('sha256').update(credential).digest('hex');
 async function photo(color){return 'data:image/jpeg;base64,'+(await sharp({create:{width:1080,height:1080,channels:3,background:color}}).jpeg().toBuffer()).toString('base64');}
 const red=await photo('#c39582'),blue=await photo('#87a6b0');
 function fixture(){const store=memoryStore();let clock=Date.parse('2026-10-08T03:00:00Z');const auth=accounts(store,{now:()=>clock});return {store,auth,nextDay:()=>clock+=86400000,async call(action,values={},credential=first){const actor=await auth.identity(credential);return createAtelierService(store,{now:()=>clock,memberForCredential:()=>actor.member})({action,...values},credential);}};}
-const rectPixels=(room,slot=0)=>{const rect=partition(room.capacity,random(room.seed)).find(value=>value.slot===slot);return rect.w*rect.h*4;};
+// A single accepted contribution fills the complete 256px square.
+const rectPixels=()=>65536;
 
 test('reuse selects only own current-day photos, returns partial results and keeps GLOBAL one pixel',async()=>{
  const {store,call,nextDay}=fixture();const create=name=>call('create',{name,capacity:2});

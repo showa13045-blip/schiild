@@ -5,8 +5,17 @@ import {inflateSync,deflateSync} from 'node:zlib';
 function crc32(bytes){let crc=0xffffffff;for(const byte of bytes){crc^=byte;for(let bit=0;bit<8;bit++)crc=(crc>>>1)^((crc&1)?0xedb88320:0);}return (crc^0xffffffff)>>>0;}
 function chunk(kind,data){const type=Buffer.from(kind),length=Buffer.alloc(4),crc=Buffer.alloc(4);length.writeUInt32BE(data.length);crc.writeUInt32BE(crc32(Buffer.concat([type,data])));return Buffer.concat([length,type,data,crc]);}
 function decode(value){const bytes=Buffer.from(value);if(!bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])))throw Error('generated_png_invalid');let width,height;const compressed=[];
- for(let offset=8;offset<bytes.length;){const size=bytes.readUInt32BE(offset);if(size>3e6||offset+12+size>bytes.length)throw Error('generated_png_invalid');const kind=bytes.toString('ascii',offset+4,offset+8),data=bytes.subarray(offset+8,offset+8+size);if(kind==='IHDR'){width=data.readUInt32BE(0);height=data.readUInt32BE(4);if(![128,256].includes(width)||height!==width||data[8]!==8||data[9]!==6||data[10]!==0||data[11]!==0||data[12]!==0)throw Error('generated_png_invalid');}if(kind==='IDAT')compressed.push(data);offset+=size+12;}
+ for(let offset=8;offset<bytes.length;){const size=bytes.readUInt32BE(offset);if(size>20e6||offset+12+size>bytes.length)throw Error('generated_png_invalid');const kind=bytes.toString('ascii',offset+4,offset+8),data=bytes.subarray(offset+8,offset+8+size);if(kind==='IHDR'){width=data.readUInt32BE(0);height=data.readUInt32BE(4);if(![128,256,512,1024,2048].includes(width)||height!==width||data[8]!==8||data[9]!==6||data[10]!==0||data[11]!==0||data[12]!==0)throw Error('generated_png_invalid');}if(kind==='IDAT')compressed.push(data);offset+=size+12;}
  if(!width||!compressed.length)throw Error('generated_png_invalid');const stride=width*4,scan=inflateSync(Buffer.concat(compressed),{maxOutputLength:(stride+1)*height});if(scan.length!==(stride+1)*height)throw Error('generated_png_invalid');for(let y=0;y<height;y++)if(scan[y*(stride+1)]!==0)throw Error('generated_png_invalid');return {width,height,scan};}
 export function overlayApprovedTile(previous,replacement,rect){const base=decode(previous),tile=decode(replacement);if(base.width!==tile.width)throw Error('generated_png_invalid');const scale=base.width/128,stride=base.width*4;
  for(let y=rect.y*scale;y<(rect.y+rect.h)*scale;y++){const offset=y*(stride+1)+1+rect.x*scale*4;base.scan.set(tile.scan.subarray(offset,offset+rect.w*scale*4),offset);}
  const header=Buffer.alloc(13);header.writeUInt32BE(base.width);header.writeUInt32BE(base.height,4);header[8]=8;header[9]=6;return Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),chunk('IHDR',header),chunk('IDAT',deflateSync(base.scan)),chunk('IEND',Buffer.alloc(0))]);}
+// Reflow a preserved anonymous contribution without recovering its deleted original photo.
+export function relocateApprovedTile(previous,replacement,from,to){
+ const source=decode(previous),dest=decode(replacement),a=source.width/128,b=dest.width/128;
+ for(let y=to.y*b;y<(to.y+to.h)*b;y++)for(let x=to.x*b;x<(to.x+to.w)*b;x++){
+  const sx=Math.min((from.x+from.w)*a-1,Math.floor(from.x*a+(x-to.x*b)/(to.w*b)*from.w*a)),sy=Math.min((from.y+from.h)*a-1,Math.floor(from.y*a+(y-to.y*b)/(to.h*b)*from.h*a)),offset=sy*(source.width*4+1)+1+sx*4;
+  dest.scan.set(source.scan.subarray(offset,offset+4),y*(dest.width*4+1)+1+x*4);
+ }
+ const header=Buffer.alloc(13);header.writeUInt32BE(dest.width);header.writeUInt32BE(dest.height,4);header[8]=8;header[9]=6;return Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),chunk('IHDR',header),chunk('IDAT',deflateSync(dest.scan)),chunk('IEND',Buffer.alloc(0))]);
+}

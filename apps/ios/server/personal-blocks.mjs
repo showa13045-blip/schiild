@@ -1,6 +1,7 @@
 // DEMO/iOS ONLY. Personal visibility preferences never alter a shared artwork.
 import {createHash,randomBytes} from 'node:crypto';
-import {partition,random,voidColor} from '../../demo/src/engine.ts';
+import {voidColor} from '../../demo/src/engine.ts';
+import {atelierRects} from '../../demo/src/atelier-layout.ts';
 import {compactGlobal} from '../../demo/src/global-layout.ts';
 import {workSize} from '../../demo/src/resolution.ts';
 import {overlayApprovedTile} from './moderation-png.mjs';
@@ -23,13 +24,13 @@ export function personalBlocks({store,storage,images,core,ErrorClass,now=()=>Dat
  const roomRecord=(target,day)=>{const row=rows('SELECT data FROM rooms WHERE key=?','rooms/'+target)[0],room=row?JSON.parse(row.data):null;return {room,record:room?.days[day]};};
  function globalRecord(day){const row=rows('SELECT data FROM rooms WHERE key=?','globals/'+day)[0],record=row?JSON.parse(row.data):null;if(!record)return null;const removed=rows('SELECT source,order_key FROM removed_schiils WHERE target=? AND day=?','GLOBAL',day),visible=Object.fromEntries(Object.entries(record.pixels).filter(([,pixel])=>!removed.some(item=>item.source===pixel.source&&item.order_key===pixel.orderKey)));return {record,layout:compactGlobal(visible)};}
  function memberAt(target,day,item){
-  if(target!=='GLOBAL'){const {room,record}=roomRecord(target,day),rect=record&&partition(room.capacity,random(record.seed)).find(rect=>rect.x===item.x&&rect.y===item.y&&rect.w===item.w&&rect.h===item.h);return rect?(record.members??room.members)[rect.slot]:null;}
+  if(target!=='GLOBAL'){const {room,record}=roomRecord(target,day),rect=record&&atelierRects(room,record).find(rect=>rect.x===item.x&&rect.y===item.y&&rect.w===item.w&&rect.h===item.h);return rect?(record.members??room.members)[rect.slot]:null;}
   const data=globalRecord(day);return data?.layout.pixels.find(pixel=>pixel.position===item.y*data.layout.outputSize+item.x)?.member??null;
  }
  const hidden=(list,member)=>Boolean(member&&list.some(item=>item.target_member===member));
  async function maskAtelier(image,target,day,list){
   if(!image||!list.length)return image;const {room,record}=roomRecord(target,day);if(!record)return image;
-  const rects=partition(room.capacity,random(record.seed)).filter(rect=>record.posts[rect.slot]&&hidden(list,(record.members??room.members)[rect.slot]));if(!rects.length)return image;
+  const rects=atelierRects(room,record).filter(rect=>record.posts[rect.slot]&&hidden(list,(record.members??room.members)[rect.slot]));if(!rects.length)return image;
   let result=Buffer.from(image.split(',')[1],'base64');for(const rect of rects){const blank=await images.compose([rect],async()=>null,record.seed,workSize(record),day);result=overlayApprovedTile(result,blank,rect);}return 'data:image/png;base64,'+result.toString('base64');
  }
  const revision=(base,list)=>base&&list.length?hash(base+'\n'+JSON.stringify(list.map(item=>[item.block_key,item.target_member]))):base;
@@ -68,7 +69,7 @@ export function personalBlocks({store,storage,images,core,ErrorClass,now=()=>Dat
   }
   const result=await core(body,credential);
   if(action==='safety.target'){
-   const currentMembers=new Set(rows("SELECT json_extract(data,'$.member') AS member FROM rooms WHERE key LIKE 'accounts/%'").map(row=>row.member)),data=body.target==='GLOBAL'?globalRecord(body.day):null,atelier=body.target==='GLOBAL'?null:roomRecord(body.target,body.day),rects=atelier?partition(atelier.room.capacity,random(atelier.record.seed)):null;
+   const currentMembers=new Set(rows("SELECT json_extract(data,'$.member') AS member FROM rooms WHERE key LIKE 'accounts/%'").map(row=>row.member)),data=body.target==='GLOBAL'?globalRecord(body.day):null,atelier=body.target==='GLOBAL'?null:roomRecord(body.target,body.day),rects=atelier?atelierRects(atelier.room,atelier.record):null;
    result.selections=result.selections.map(item=>{const rect=rects?.find(rect=>rect.x===item.x&&rect.y===item.y),member=data?data.layout.pixels[item.y*data.layout.outputSize+item.x]?.member:rect?(atelier.record.members??atelier.room.members)[rect.slot]:null;return {...item,blocked:hidden(list,member),canBlock:Boolean(member&&member!==actor.member&&currentMembers.has(member))};});
    if(body.target==='GLOBAL'){const data=globalRecord(body.day),pixels=data.layout.pixels.map(pixel=>hidden(list,pixel.member)?{...pixel,color:voidColor(pixel.position%data.layout.outputSize,Math.floor(pixel.position/data.layout.outputSize),0,body.day)}:pixel);if(result.selections.some(item=>item.blocked))result.image='data:image/png;base64,'+Buffer.from(await images.global(pixels,data.layout.outputSize,body.day)).toString('base64');}
    else result.image=await maskAtelier(result.image,body.target,body.day,list);

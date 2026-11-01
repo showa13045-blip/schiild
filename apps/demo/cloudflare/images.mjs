@@ -15,6 +15,12 @@ function png(pixels){
  const stride=width*4,scan=Buffer.alloc(height*(1+stride));for(let y=0;y<height;y++)scan.set(pixels.data.subarray(y*stride,(y+1)*stride),y*(stride+1)+1);
  return Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),chunk('IHDR',header),chunk('IDAT',deflateSync(scan)),chunk('IEND',Buffer.alloc(0))]);
 }
+// Profile uploads are separate from camera-only Schiil posts. Retain only a small re-encoded icon.
+export function normalizeProfileIcon(bytes){
+ const image=decode(bytes),width=96,height=96,rgb=resample(image,width,height),data=new Uint8ClampedArray(width*height*4);
+ for(let n=0;n<width*height;n++)data.set([rgb[n*3],rgb[n*3+1],rgb[n*3+2],255],n*4);
+ return Buffer.from(jpeg.encode({width,height,data},85).data);
+}
 export const workerImages={
  async thumbnail(bytes){const width=256,height=256,rgb=resample(decode(bytes),width,height),data=new Uint8ClampedArray(width*height*4);for(let n=0;n<width*height;n++)data.set([rgb[n*3],rgb[n*3+1],rgb[n*3+2],255],n*4);return png({width,height,data});},
  async mean(bytes){const image=decode(bytes),sum=[0,0,0];for(let n=0;n<image.data.length;n+=4)for(let channel=0;channel<3;channel++)sum[channel]+=image.data[n+channel];return nearest(sum.map(n=>n/(image.width*image.height)));},

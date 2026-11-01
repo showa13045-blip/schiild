@@ -1,5 +1,5 @@
 import {createHash, randomBytes, randomInt} from 'node:crypto';
-import {partition, random, shuffle} from '../src/engine.ts';
+import {random, shuffle} from '../src/engine.ts';
 import {globalService} from './global-service.mjs';
 import {participants,memberCount,snapshotDays} from './membership.mjs';
 import {listRecords} from './accounts.mjs';
@@ -7,6 +7,7 @@ import {dayArea,areaSummary} from './personal-area.mjs';
 import {WORK_SIZE,workSize} from '../src/resolution.ts';
 import {normalizeConcept,isFreeConcept} from '../src/concept.ts';
 import {REMOVED_PHOTO} from './account-removal.mjs';
+import {atelierRects,CONTRIBUTOR_LAYOUT} from '../src/atelier-layout.ts';
 
 export class ApiError extends Error {
  constructor(status, code){super(code);this.status=status;this.code=code;}
@@ -17,6 +18,7 @@ const utcDay=now=>new Date(now).toISOString().slice(0,10);
 const codePattern=/^[A-Z0-9]{8}$/;
 const roomKey=code=>`rooms/${code}`;
 const photoKey=(member,day,content)=>`photos/${member}/${day}/${content}`;
+const officialMetadata=room=>room.official?{official:true,memberLimit:room.memberLimit,capacity:Math.max(1,room.members.length)}:{};
 // Completed legacy works had no theme. Never give them a later atelier theme.
 const dayConcept=(room,record)=>record?.concept??(!record||record.status==='open'?room.concept??'':'');
 
@@ -34,7 +36,7 @@ export function createAtelierService(store,{now=()=>Date.now(),images,memberForC
   fail(409,'retry');
  }
  function daySeed(room,day){return parseInt(digest(`${room.code}/${day}/${room.seed}`).slice(0,7),16);}
- function current(room){const day=utcDay(now()),saved=room.days[day];return saved?{...saved,concept:dayConcept(room,saved),outputSize:workSize(saved)}:{day,seed:daySeed(room,day),members:[...room.members],posts:{},status:'open',concept:room.concept??'',outputSize:WORK_SIZE};}
+ function current(room){const day=utcDay(now()),saved=room.days[day],record=saved?{...saved,concept:dayConcept(room,saved)}:{day,seed:daySeed(room,day),members:[...room.members],posts:{},status:'open',concept:room.concept??'',outputSize:WORK_SIZE};if(record.status==='open')record.layoutVersion=CONTRIBUTOR_LAYOUT;record.outputSize=workSize(record);return record;}
  function authorize(room,member){const slot=room.members.indexOf(member);if(slot<0)fail(403,'forbidden');return slot;}
  async function ownPost(sourceCode,day,member){
   if(!codePattern.test(sourceCode))fail(404,'not_found');
@@ -43,7 +45,7 @@ export function createAtelierService(store,{now=()=>Date.now(),images,memberForC
   return key;
  }
  async function composeDay(room,today){
-  return images.compose(partition(room.capacity,random(today.seed)),async rect=>{
+  return images.compose(atelierRects(room,today),async rect=>{
     const key=today.posts[rect.slot];if(!key||key===REMOVED_PHOTO)return null;
    const photo=await store.get(key,{type:'arrayBuffer'});if(!photo)fail(503,'generation_failed');
    return photo;
@@ -51,8 +53,8 @@ export function createAtelierService(store,{now=()=>Date.now(),images,memberForC
  }
  function summary(room,member){
   const day=utcDay(now()),today=room.days[day],slot=authorize(room,member);
-  return {code:room.code,name:room.name,visibility:room.visibility==='public'?'public':'private',capacity:room.capacity,members:memberCount(room),day,concept:dayConcept(room,today),defaultConcept:room.concept??'',
-   seed:today?.seed??daySeed(room,day),slot,postedSlots:Object.keys(today?.posts??{}).map(Number),
+  return {code:room.code,name:room.name,visibility:room.visibility==='public'?'public':'private',capacity:room.capacity,...officialMetadata(room),members:memberCount(room),day,concept:dayConcept(room,today),defaultConcept:room.concept??'',
+   seed:today?.seed??daySeed(room,day),slot,postedSlots:Object.keys(today?.posts??{}).map(Number),layoutRects:today?.status==='ready'?atelierRects(room,today):atelierRects(room,{...today,seed:today?.seed??daySeed(room,day),posts:today?.posts??{},layoutVersion:CONTRIBUTOR_LAYOUT}),
    hasPhoto:Boolean(today?.posts[slot]),canGenerate:room.creator===member,
    area:dayArea(room,today,member),status:today?.status??'open',works:Object.values(room.days).filter(d=>d.status==='ready').sort((a,b)=>b.day.localeCompare(a.day)).map(d=>({day:d.day,concept:dayConcept(room,d),seed:d.seed,count:Object.keys(d.posts).length,index:d.index,custody:d.custodian===member?'self':'other',area:dayArea(room,d,member)}))};
  }
@@ -66,7 +68,7 @@ export function createAtelierService(store,{now=()=>Date.now(),images,memberForC
    // Opt-in only. Never serialize private rooms, participant identities, photos or day records.
    const matches=rows.map(row=>row.data).filter(room=>room.visibility==='public'&&room.code>cursor&&[room.name,dayConcept(room,room.days[day]),room.code].some(value=>value.normalize('NFKC').toLowerCase().includes(needle))).sort((a,b)=>a.code<b.code?-1:a.code>b.code?1:0);
    const page=matches.slice(0,24);
-   return {ateliers:page.map(room=>({code:room.code,name:room.name,capacity:room.capacity,concept:dayConcept(room,room.days[day]),members:memberCount(room),total:Object.values(room.days).filter(day=>day.status==='ready').length})),nextCursor:matches.length>24?page.at(-1).code:null};
+   return {ateliers:page.map(room=>({code:room.code,name:room.name,capacity:room.capacity,...officialMetadata(room),concept:dayConcept(room,room.days[day]),members:memberCount(room),total:Object.values(room.days).filter(day=>day.status==='ready').length})),nextCursor:matches.length>24?page.at(-1).code:null};
   }
   if(action==='global')return global.view(String(body.day??utcDay(now())),member);
   if(action==='global.schiils')return global.schiils(body.day,body.positions,body.layoutRevision);
@@ -119,7 +121,7 @@ export function createAtelierService(store,{now=()=>Date.now(),images,memberForC
   if(action==='public.atelier'||action==='public.work'){
    const {data:room}=await read(code);if(room.visibility!=='public')fail(404,'not_found');
    const works=Object.values(room.days).filter(record=>record.status==='ready'&&record.day<=utcDay(now()));
-   if(action==='public.atelier')return {code,name:room.name,concept:dayConcept(room,room.days[utcDay(now())]),works:works.sort((a,b)=>b.day.localeCompare(a.day)).map(record=>({day:record.day,index:record.index,concept:dayConcept(room,record)}))};
+   if(action==='public.atelier')return {code,name:room.name,...officialMetadata(room),concept:dayConcept(room,room.days[utcDay(now())]),works:works.sort((a,b)=>b.day.localeCompare(a.day)).map(record=>({day:record.day,index:record.index,concept:dayConcept(room,record)}))};
    const work=works.find(record=>record.day===body.day);if(!work)fail(404,'not_found');
    const bytes=await store.get(`works/${code}/${work.day}`,{type:'arrayBuffer'});if(!bytes)fail(503,'generation_failed');
    // Visibility can change while loading a generated image. Never serve original photos.
@@ -129,16 +131,16 @@ export function createAtelierService(store,{now=()=>Date.now(),images,memberForC
   if(action==='preview'){
    const {data:room}=await read(code);
    if(publicOnly&&room.visibility!=='public')fail(404,'not_found');
-   return {code,name:room.name,capacity:room.capacity,concept:dayConcept(room,room.days[utcDay(now())]),members:memberCount(room),total:Object.values(room.days).filter(d=>d.status==='ready').length};
+   return {code,name:room.name,capacity:room.capacity,...officialMetadata(room),concept:dayConcept(room,room.days[utcDay(now())]),members:memberCount(room),total:Object.values(room.days).filter(d=>d.status==='ready').length};
   }
   if(action==='join'){
    const room=await mutate(code,room=>{
     if(room.members.includes(member))return room;
-    if(memberCount(room)>=room.capacity)fail(409,'full');
+    if((!room.official||room.memberLimit!==null)&&memberCount(room)>=(room.official?room.memberLimit:room.capacity))fail(409,'full');
     const today=current(room),previous=participants(room,today).indexOf(member);
     // A departed participant can return to their own recorded slot today.
     let slot=previous>=0&&!room.members[previous]?previous:room.members.findIndex((value,n)=>!value&&!today.posts[n]&&!today.pendingSlots?.[n]);
-    if(slot<0){if(room.members.length>=room.capacity)fail(409,'slots_reserved');slot=room.members.length;}
+    if(slot<0){if(!room.official&&room.members.length>=room.capacity)fail(409,'slots_reserved');slot=room.members.length;}
     room.members[slot]=member;
     if(room.days[today.day])room.days[today.day].members[slot]=member;
     room.creator??=member;
@@ -217,6 +219,8 @@ export function createAtelierService(store,{now=()=>Date.now(),images,memberForC
     const today=current(room);
     if(today.status==='ready'||today.status==='generating')return room;
     if(!Object.keys(today.posts).length)fail(409,'no_photos');
+    today.layoutVersion=CONTRIBUTOR_LAYOUT;
+    today.outputSize=workSize(today);
     today.status='generating';
     const contributors=Object.keys(today.posts).map(Number);
     today.custodian=participants(room,today)[contributors[randomInt(contributors.length)]];
@@ -237,7 +241,7 @@ export function createAtelierService(store,{now=()=>Date.now(),images,memberForC
   if(action==='work'){
    const work=room.days[String(body.day)];if(!work||work.status!=='ready')fail(404,'not_found');
    const bytes=await store.get(`works/${code}/${work.day}`,{type:'arrayBuffer'});if(!bytes)fail(503,'generation_failed');
-   return {day:work.day,concept:dayConcept(room,work),outputSize:workSize(work),image:`data:image/png;base64,${Buffer.from(bytes).toString('base64')}`,rects:partition(room.capacity,random(work.seed)),order:shuffle(Array.from({length:room.capacity},(_,n)=>n),random(work.seed+31)),count:Object.keys(work.posts).length,index:work.index,custody:work.custodian===member?'self':'other',area:dayArea(room,work,member),opened:false};
+   return {day:work.day,concept:dayConcept(room,work),outputSize:workSize(work),image:`data:image/png;base64,${Buffer.from(bytes).toString('base64')}`,rects:atelierRects(room,work),order:shuffle(atelierRects(room,work).map(rect=>rect.slot),random(work.seed+31)),count:Object.keys(work.posts).length,index:work.index,custody:work.custodian===member?'self':'other',area:dayArea(room,work,member),opened:false};
   }
   fail(400,'invalid');
  };

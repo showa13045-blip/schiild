@@ -1,3 +1,4 @@
+import {ChatLink} from './CommunityLinks';
 import ModerationNotice from './ModerationNotice';
 import {browserStorage,isWeekPreview} from './preview-mode.ts';
 import React,{useCallback,useEffect,useRef,useState} from 'react';
@@ -86,7 +87,7 @@ export default function SharedExperience({entry,onManage,onShare,onAccount,onPos
  useEffect(()=>{if(draft&&state&&(draft.day!==state.day||state.status!=='open')){setDraft(null);go('home');}},[draft,state?.day,state?.status]);
  useEffect(()=>{if(navigation.openDay)void open(navigation.openDay);else go(navigation.screen);},[navigation.revision]);
  const short=shortDate;
- const rects=state?partition(state.capacity,random(state.seed)):[];
+ const rects=state?(state.layoutRects??partition(state.capacity,random(state.seed))):[];
  return <div className={screen==='archive'?'app archive-app':'app'} data-tab-screen={screen}><header className="header"><button className="brand" aria-label="Schiild" onClick={onAccount}><span className="brand-symbol"><i/><i/><i/></span>Schiild</button><button className="text-button" onClick={onManage}>{t('home.title')} ＋</button></header>
   <main>{error&&<div className="shared-error" role="alert"><p>{error}</p><button className="text-button" onClick={()=>void refresh()}>{t('demo.shared.refresh')}</button></div>}
   {!state?<p>{t('common.loading')}</p>:<>
@@ -108,7 +109,7 @@ export default function SharedExperience({entry,onManage,onShare,onAccount,onPos
    </section>}
    {screen==='camera'&&<Camera shared day={cameraDay??state.day} atelier={state.name} concept={state.concept} onBack={()=>go('home')} onSubmit={post}/>}
    {screen==='draft'&&draft&&<DraftPreview draft={draft} atelier={state.name} onClose={()=>{setDraft(null);go('home');}}/>}
-   {screen==='work'&&work&&<Reveal shared key={work.day} atelier={state.name} work={work} onOpened={()=>{try{browserStorage().setItem(`schiild.shared.opened.${entry.code}.${work.day}`,'true');}catch{/* Viewing remains possible when local storage is full. */}}} onNext={()=>onGlobal(work.day)}/>}
+   {screen==='work'&&work&&<><ChatLink code={entry.code} day={work.day}/><Reveal shared key={work.day} atelier={state.name} work={work} onOpened={()=>{try{browserStorage().setItem(`schiild.shared.opened.${entry.code}.${work.day}`,'true');}catch{/* Viewing remains possible when local storage is full. */}}} onNext={()=>onGlobal(work.day)}/></>}
    {screen==='archive'&&<ArchiveCalendar items={archiveItems??state.works} currentDay={state.day} atelier={state.name} busy={busy} loadImage={loadArchiveImage} loadDayWorks={loadDayWorks} onOpenAtelier={onOpenAtelier} onOpen={item=>void open(item.day)} onGlobal={item=>onGlobal(item.day)}/>}
   </>}
   </main>

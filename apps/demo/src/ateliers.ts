@@ -21,7 +21,7 @@ export function addAtelier(collection:Collection,invitation:Invitation,created:b
  const previous=collection.departed?.find(a=>a.code===invitation.code&&!a.online);
  if(previous)return {...collection,selected:previous.code,ateliers:[...collection.ateliers,previous],departed:collection.departed?.filter(a=>a.code!==previous.code)};
  const day=collection.ateliers.find(a=>a.code===collection.selected)?.state.day??new Date().toISOString().slice(0,10);
- const state=initial(invitation.capacity,false);state.day=day;
+ const state=initial(invitation.online?Math.min(invitation.capacity,20):invitation.capacity,false);state.day=day;
  const activeFrom=created||invitation.online?day:dayAfter(day);
  // DEMO ONLY: a new atelier starts unposted; reuse requires an explicit selection.
  return {...collection,selected:invitation.code,ateliers:[...collection.ateliers,{...invitation,creator:created?collection.device:null,activeFrom,state}]};

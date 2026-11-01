@@ -410,3 +410,52 @@ error.image_too_large          この画像は大きすぎます。
 - [ ] `\n` を含む文言（`fail.title` `excluded.title`）は改行位置が意図通りか
 - [ ] 禁止語リスト（§0）を lint で機械的に検出できるようにすること
 - [ ] 感嘆符が1つも含まれていないことを確認すること
+
+
+## デモ追加文言：チャット・プロフィール画像・公式アトリエ（2026-11-02）
+
+利用者の指示に基づくデモ専用の追加。全10言語の対応表は `apps/ios/server/community-copy.mjs` に置く。以下の名前空間は `demo.community.` とし、同モジュールと同じキーを用いる。
+
+| キー | 日本語 | 英語 |
+| --- | --- | --- |
+| `demo.community.chat` | チャット | Chat |
+| `demo.community.icon` | プロフィール画像 | Profile picture |
+| `demo.community.send` | 送信 | Send |
+| `demo.community.placeholder` | メッセージを入力 | Write a message |
+| `demo.community.empty` | まだメッセージはありません。 | No messages yet. |
+| `demo.community.back` | 戻る | Back |
+| `demo.community.loading` | 読み込み中… | Loading… |
+| `demo.community.failed` | 処理できませんでした。もう一度お試しください。 | Could not complete this action. Please try again. |
+| `demo.community.restricted` | このチャットは現在のアトリエメンバーだけが利用できます。 | Only current atelier members can open this chat. |
+| `demo.community.limited` | 少し待ってからお試しください。 | Please wait a moment before trying again. |
+| `demo.community.invalid` | 内容をご確認ください。送信できない表現が含まれています。 | Please check your message. Some wording cannot be posted. |
+| `demo.community.reported` | 通報を受け付けました。 | Report received. |
+| `demo.community.block` | この人をブロック | Block this person |
+| `demo.community.blocked` | ブロックしました。 | Person blocked. |
+| `demo.community.report` | 発言を通報 | Report message |
+| `demo.community.reportIcon` | 画像を通報 | Report picture |
+| `demo.community.choose` | 画像を選ぶ | Choose a picture |
+| `demo.community.remove` | 画像を削除 | Remove picture |
+| `demo.community.pending` | 確認待ち | Awaiting review |
+| `demo.community.approved` | 承認済み | Approved |
+| `demo.community.rejected` | 承認されませんでした | Not approved |
+| `demo.community.save` | 保存 | Save |
+| `demo.community.older` | 以前のメッセージ | Earlier messages |
+| `demo.community.refresh` | 更新 | Refresh |
+| `demo.community.review` | チャット・画像の確認 | Review chat and pictures |
+| `demo.community.signin` | ログインして続ける | Sign in to continue |
+| `demo.community.approve` | 承認 | Approve |
+| `demo.community.reject` | 承認しない | Reject |
+| `demo.community.dismiss` | 対応不要として終了 | Dismiss report |
+| `demo.community.preview` | 内容を確認 | View content |
+| `demo.community.rules` | 投稿ルール | Posting rules |
+| `demo.community.iconNote` | 画像は運営の確認後に他のメンバーへ表示されます。 | Your picture appears to other members after review. |
+| `demo.community.sent` | 送信しました | Sent |
+| `demo.community.chatContext` | チャット | Chat |
+| `demo.community.official` | 公式アトリエ | Verified atelier |
+| `demo.community.officialSettings` | 公式アトリエの管理 | Official ateliers |
+| `demo.community.code` | アトリエコード | Atelier code |
+| `demo.community.limit` | 参加人数の上限 | Member limit |
+| `demo.community.unlimited` | 無制限 | Unlimited |
+| `demo.community.verify` | 公式アトリエにする | Verify this atelier |
+| `demo.community.limitError` | 現在の参加人数以上の上限を設定してください。 | The limit must be at least the current number of members. |
