@@ -1,6 +1,6 @@
 # 提出画像と実機確認
 
-2026-10-28。build 4は有効。App Store Connectに提出画像はまだない。
+2026-11-02。build 4は有効。ネイティブiOSシミュレーターで60枚を撮影し、検品した33枚をApp Store Connectへ登録済み。末尾の撮影記録を参照する。
 Windows上のブラウザ画像をiPhone／iPadアプリの実機画像として提出しない。
 
 ## 最短の撮影セット
@@ -67,3 +67,25 @@ WhatsAppのMeta設定は本人の指定で後日に保留中。
 
 - [Appleの提出画像仕様](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications)
 - [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/)
+
+## 2026-11-02 撮影・登録完了
+
+MacのiOSシミュレーターで全10言語、iPhoneとiPadの計60枚を撮影した。
+寸法はiPhone 1206×2622、iPad 2064×2752。透過なし。XCTestは両端末で成功した。
+通常アプリのコードは変えず、隔離されたCIで開始URLだけを一週間利用例へ指定した。
+画面に架空の利用例であることを表示し、物理端末のTestFlight撮影とは区別する。
+
+未完成作品だけが表示されたアトリエ画面と、通知の写り込み／作品の見切れがあるiPhoneカレンダーは提出対象外とした。
+GLOBAL（iPhone・iPad）とカレンダー（iPad）を選び、Apple対応9言語・11ロケールで計33枚の登録を完了した。
+AppleのCOMPLETE、画像寸法、ファイルのチェックサムを照合した。元画像の画素は変更していない。
+クメール語も撮影・保存したが、Appleの掲載ロケールにはないためアップロードしていない。
+
+撮影記録: outputs/schiild-ios-preparation/native-store-captures-20261102/provenance.json
+検品・出所・画像一覧: outputs/schiild-ios-preparation/store-captures-20261102/
+Apple登録記録: outputs/schiild-ios-preparation/store-screenshots-saved-20261102.json
+
+隔離App Reviewの実配信APIでも、未投稿時の即時チャット、認可、通報の運営確認と除去、プロフィール画像の承認、退出後の拒否を検証した。
+通常利用者のデータは対象外。新機能のTestFlight実機確認は本人より未確認と回答されており、未完了として残す。
+
+残りはApp Privacy公開への本人同意、新機能の実機確認、本人が保留したWhatsAppのMeta設定・実機確認。
+審査提出・一般公開はまだ行っていない。無料・EU27か国除外・承認後手動公開を維持する。
