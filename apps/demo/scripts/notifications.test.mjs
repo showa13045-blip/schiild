@@ -2,7 +2,7 @@ import {pushText} from '../src/push-copy.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
-import {createECDH,randomBytes} from 'node:crypto';
+import {createECDH,randomBytes,generateKeyPairSync} from 'node:crypto';
 import webpush from 'web-push';
 import sharp from 'sharp';
 import {accounts} from '../server/accounts.mjs';
@@ -24,6 +24,24 @@ function fixture(sqlite=false){
  const subscribe=(token,name='device',language='it')=>call('push.subscribe',{subscription:subscription(name),clientKey:'f'.repeat(64),language},token);
  return {db,store,auth,push,call,register,subscribe,sent,now,setTime:value=>time=Date.parse(value),advance:ms=>time+=ms};
 }
+test('image-review push is private, localized, independently switchable and legacy preference saves preserve it',async()=>{
+ const f=fixture(true),a=await f.register('first_member',1),b=await f.register('second_member',2);await f.subscribe(a.token,'author','ja');await f.subscribe(b.token,'other','en');f.advance(1);const actor=await f.auth.identity(a.token);
+ async function event(suffix){const eventId=pushDigest('moderation-test/'+suffix);await f.store.setJSON('push-events/'+eventId,{eventId,kind:'moderation',day:'2026-10-19',recipients:[actor.member],createdAt:f.now(),expiresAt:f.now()+86400000},{onlyIfNew:true});}
+ try{await event('one');await f.push.drain();assert.equal(f.sent.length,1);assert.match(f.sent[0].sub.endpoint,/author$/);assert.equal(f.sent[0].payload.body,'画像審査のお知らせ');assert(f.sent[0].payload.url.startsWith('/moderation-notices/'));for(const secret of ['sexual',actor.member,a.token,'data:image'])assert(!JSON.stringify(f.sent[0].payload).includes(secret));
+  await f.call('push.preferences',{preferences:{atelierReady:true,globalReady:true,post:true,moderation:false}},a.token);await f.call('push.preferences',{preferences:{atelierReady:false,globalReady:true,post:true}},a.token);assert.equal((await f.call('push.config',{},a.token)).preferences.moderation,false);f.advance(1);await event('two');await f.push.drain();assert.equal(f.sent.length,1);
+ }finally{f.db.close();}
+});
+test('native subscriptions support Apple identities, session revocation, APNs expiry and account erasure',async()=>{
+ const f=fixture(true),a=await f.register('apple_member',1),raw=await f.store.getWithMetadata('accounts/apple_member',{type:'json'});await f.store.setJSON('accounts/apple_member',{...raw.data,appleSubject:'a'.repeat(64)},{onlyIfMatch:raw.etag});
+ const pair=generateKeyPairSync('ec',{namedCurve:'prime256v1'}),apnsConfig={teamId:'PQ7WUU6HWC',topic:'app.schiild.mobile',environment:'production',keyId:'TEST123456',privateKey:pair.privateKey.export({type:'pkcs8',format:'pem'}).toString()},sent=[];let sendStatus=200;
+ const native=notificationService(f.store,{config,apnsConfig,requireLine:true,now:f.now,sendNative:async(sub,payload)=>{sent.push({sub,payload});return {status:sendStatus};}}),actor=await f.auth.identity(a.token),body={action:'push.native.subscribe',token:'ab'.repeat(32),clientKey:'f'.repeat(64),language:'en'};
+ async function event(suffix){const eventId=pushDigest('native-test/'+suffix);await f.store.setJSON('push-events/'+eventId,{eventId,kind:'moderation',day:'2026-10-19',recipients:[actor.member],createdAt:f.now(),expiresAt:f.now()+86400000},{onlyIfNew:true});}
+ try{assert.equal((await native.execute({action:'push.config'},actor)).nativeEnabled,true);await assert.rejects(native.execute({...body,token:'https://evil.test'},actor),e=>e.code==='push_invalid');const sub=await native.execute(body,actor);assert.equal(sub.endpoint,'apns:app.schiild.mobile:'+body.token);assert.equal((await native.execute({action:'push.state',endpoint:sub.endpoint,clientKey:body.clientKey},actor)).active,true);
+  f.advance(1);await event('first');await native.drain();assert.equal(sent.length,1);assert.equal(sent[0].sub.kind,'apns');assert.equal(sent[0].payload.body,'Image review updates');sendStatus=410;f.advance(1);await event('expired');await native.drain();assert.equal((await native.execute({action:'push.state',endpoint:sub.endpoint,clientKey:body.clientKey},actor)).active,false);
+  await native.execute(body,actor);f.advance(1);await event('logout');await f.auth.execute({action:'account.logout'},a.token);const count=sent.length;await native.drain();assert.equal(sent.length,count);
+  const renewed=await f.auth.execute({action:'account.login',username:'apple_member',password},'4'.repeat(64));await native.execute(body,await f.auth.identity(renewed.token));await f.auth.execute({action:'account.delete',confirmUsername:'apple_member',password},renewed.token);assert.equal((await f.store.listJSON('push-subscriptions/')).length,0);
+ }finally{f.db.close();}
+});
 for(const sqlite of [false,true])test(`post/ready/GLOBAL notifications, independent preferences, privacy and no replay (${sqlite?'SQLite':'memory'})`,async()=>{
  const f=fixture(sqlite),a=await f.register('first_member',1),b=await f.register('second_member',2),room=await f.call('create',{name:'Morning',capacity:2},a.token);await f.call('join',{code:room.code},b.token);
  await f.subscribe(a.token,'a','en');await f.subscribe(b.token,'b');f.advance(1);

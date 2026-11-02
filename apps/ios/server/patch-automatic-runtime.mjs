@@ -1,0 +1,16 @@
+// Additive patch to the already reviewed community foundation, not to authentication modules.
+/* eslint-disable schiild/product-copy -- Executable source expressions only. */
+export function patchAutomaticRuntime(source){
+ const once=(old,value)=>{if(source.split(old).length!==2)throw Error('Automatic runtime anchor changed: '+old.slice(0,90));source=source.replace(old,value);};
+ once('eraseCommunity(storage,account.member);','eraseCommunity(storage,account.member);eraseAutomaticReviews(storage,account.member);');
+ once('WEB_PUSH_CONFIG: void 0 } : env;','WEB_PUSH_CONFIG: void 0, APNS_CONFIG: void 0 } : env;');
+ once('const store = metadataStore(this.storage, images, { notificationEvents: Boolean(readPushConfig(this.env.WEB_PUSH_CONFIG)) });','const store = automaticImageStore(metadataStore(this.storage, images, { notificationEvents: Boolean(readPushConfig(this.env.WEB_PUSH_CONFIG)||readAPNSConfig(this.env.APNS_CONFIG)) }),this.storage);');
+ once('push: notificationService(store, { requireLine: !this.review, config: this.env.WEB_PUSH_CONFIG, images: workerImages })','push: automaticNotificationService(store, { requireLine: !this.review, config: this.env.WEB_PUSH_CONFIG, apnsConfig:this.env.APNS_CONFIG, images: workerImages })');
+ once('await push.finalizeGlobal();','const {store}=this.services();\n        await automaticModeration({storage:this.storage,store,images:workerImages,config:this.env.AUTOMATIC_MODERATION_CONFIG,operatorConfig:this.env.MODERATION_CONFIG,notifications:Boolean(this.env.WEB_PUSH_CONFIG),schedule:async stamp=>{const alarm=await this.storage.getAlarm();if(!alarm||alarm>stamp)await this.storage.setAlarm(stamp);}}).drain();\n        await push.finalizeGlobal();');
+ const line=source.split('\n').find(value=>value.includes('result = await community({'));
+ if(!line)throw Error('Community dispatch anchor missing');const error=line.match(/ErrorClass:([\w$]+)/)?.[1];if(!error)throw Error('API error anchor missing');
+ const declaration=line.replace('result = await community(','const social = community(').replace('.execute(body,actor,credential);',';');
+ once(line,declaration+'\n          result = await automaticModeration({storage:this.storage,store,images:workerImages,core:(next,token)=>social.execute(next,actor,token),publisher:approved,ErrorClass:'+error+',config:this.env.AUTOMATIC_MODERATION_CONFIG,operatorConfig:this.env.MODERATION_CONFIG,review:this.review,notifications:Boolean(this.env.WEB_PUSH_CONFIG),schedule:async stamp=>{const alarm=await this.storage.getAlarm();if(!alarm||alarm>stamp)await this.storage.setAlarm(stamp);}}).execute(body,actor,credential);');
+ source=source.replaceAll('notifications:Boolean(this.env.WEB_PUSH_CONFIG)','notifications:Boolean(this.env.WEB_PUSH_CONFIG||this.env.APNS_CONFIG)').replaceAll('notifications: Boolean(this.env.WEB_PUSH_CONFIG)','notifications: Boolean(this.env.WEB_PUSH_CONFIG||this.env.APNS_CONFIG)');
+ return 'import {automaticModeration} from "./automatic-moderation.mjs";\nimport {automaticImageStore} from "./automatic-photo-state.mjs";\nimport {eraseAutomaticReviews} from "./automatic-jobs.mjs";\nimport {readAPNSConfig} from "./native-notifications.mjs";\nimport {notificationService as automaticNotificationService} from "../../demo/server/notifications.mjs";\n'+source;
+}

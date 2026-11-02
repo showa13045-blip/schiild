@@ -6,6 +6,7 @@ import {isFreeConcept} from '../../demo/src/concept.ts';
 import {workSize} from '../../demo/src/resolution.ts';
 import {roomNotificationEvents} from '../../demo/server/notification-events.mjs';
 import {overlayApprovedTile,relocateApprovedTile} from './moderation-png.mjs';
+import {AUTOMATIC_RETRY} from './automatic-policy.mjs';
 const digest=value=>createHash('sha256').update(value).digest('hex');
 export function moderationConfig(value,review=false){let config;try{config=JSON.parse(value??'null');}catch{return null;}if(typeof config?.enabled!=='boolean'||!Array.isArray(config.operators)||!config.operators.length||config.operators.some(name=>typeof name!=='string'||!/^[a-z0-9][a-z0-9_-]{2,23}$/.test(name)))return null;return {...config,operators:review?['review_one']:config.operators};}
 export async function moderatorReadiness(store,value,review=false){const config=moderationConfig(value,review);let operatorReady=false;for(const name of config?.operators??[])if((await store.getWithMetadata('accounts/'+name,{type:'json'}))?.data?.member)operatorReady=true;return {enabled:Boolean(config?.enabled),operatorReady};}
@@ -27,26 +28,29 @@ export function humanModeration({store,storage,images,core,globalFactory,ErrorCl
  }
  async function state(body,actor){const result=await core(body,actor.credential),record=queued(actor.member,result.day,result.code);return record&&record.status!=='approved'?{...result,hasPhoto:true,moderationStatus:record.status==='reviewing'?'pending':record.status}:result;}
  async function enqueue(body,actor,target){
-  if(body.day!==today())fail(409,'window_closed');const global=target==='GLOBAL';let targetRoom,stateValue,slot=null;
+  if(body.day!==today())fail(409,'window_closed');const global=target==='GLOBAL',retry=body[AUTOMATIC_RETRY];let targetRoom,stateValue,slot=null;
   if(!global){stateValue=await core({action:'state',code:target},actor.credential);targetRoom=(await room(target)).data;slot=targetRoom.members.indexOf(actor.member);if((stateValue.status!=='open'&&!queued(actor.member,body.day,target))||slot<0)fail(409,'window_closed');if((body.sourceCode!==undefined||body.reuse===true)&&!isFreeConcept(stateValue.concept))fail(409,'concept_restricted');}
   const bytes=await photo(body,actor),source=digest(bytes),previous=queued(actor.member,body.day,target);
-  if(previous){if(previous.source!==source)fail(409,global?'global_already_recorded':'already_recorded');return previous;}
+  const replacing=Boolean(previous&&previous.status==='rejected'&&retry?.member===actor.member&&retry.day===body.day&&retry.sources?.includes(previous.source)&&retry.targets?.includes(target));
+  if(previous&&!replacing){if(previous.source!==source)fail(409,global?'global_already_recorded':'already_recorded');return previous;}
+  if(replacing&&previous.source===source)fail(409,'review_same_rejected_image');
   if(global){if(await globalFactory(store,{images,now}).has(body.day,actor.member))fail(409,'global_already_recorded');}
   else if(stateValue.hasPhoto)fail(409,'already_recorded');
+  if(replacing&&!global)slot=previous.slot;
   const photoKey='photos/'+actor.member+'/'+body.day+'/'+source;await store.set(photoKey,bytes);await active(actor.member);
   const queueKey=digest(actor.member+'/'+body.day+'/'+target),createdAt=new Date(now()).toISOString();
   // Reserve the accepted submission's original slot before someone leaves/rejoins.
   if(!global)for(let attempt=0;attempt<12;attempt++){
    const current=await room(target),next=structuredClone(current.data);for(const day of Object.values(next.days))day.members??=[...next.members];
-   if(next.members[slot]!==actor.member)fail(409,'retry');const day=next.days[body.day]??{day:body.day,seed:stateValue.seed,members:[...next.members],posts:{},status:'open',concept:stateValue.concept,outputSize:256};
-   if(day.status!=='open'||body.day!==today())fail(409,'window_closed');if(day.posts[slot])fail(409,'already_recorded');day.pendingSlots={...day.pendingSlots,[slot]:actor.member};next.days[body.day]=day;
+   if(!next.members.includes(actor.member))fail(409,'retry');const day=next.days[body.day]??{day:body.day,seed:stateValue.seed,members:[...next.members],posts:{},status:'open',concept:stateValue.concept,outputSize:256};
+   if((day.status!=='open'&&!(replacing&&day.status==='ready'))||body.day!==today())fail(409,'window_closed');if(day.posts[slot])fail(409,'already_recorded');if((day.members??next.members)[slot]!==actor.member)fail(409,'retry');day.pendingSlots={...day.pendingSlots,[slot]:actor.member};next.days[body.day]=day;
    if((await store.setJSON('rooms/'+target,next,{onlyIfMatch:current.etag})).modified)break;if(attempt===11)fail(409,'retry');
   }
-  storage.transactionSync(()=>{if(body.day!==today())fail(409,'window_closed');const account=rows('SELECT data FROM rooms WHERE key=?','accounts/'+actor.account.username)[0];if(!account||JSON.parse(account.data).member!==actor.member)fail(401,'account_deleted');const existing=queued(actor.member,body.day,target);if(existing&&existing.source!==source)fail(409,global?'global_already_recorded':'already_recorded');if(!existing)storage.sql.exec('INSERT INTO moderation_queue(queue_key,member,day,target,photo_key,source,slot,status,created_at) VALUES(?,?,?,?,?,?,?,?,?)',queueKey,actor.member,body.day,target,photoKey,source,slot,'pending',createdAt);});
+  storage.transactionSync(()=>{if(body.day!==today())fail(409,'window_closed');const account=rows('SELECT data FROM rooms WHERE key=?','accounts/'+actor.account.username)[0];if(!account||JSON.parse(account.data).member!==actor.member)fail(401,'account_deleted');const existing=queued(actor.member,body.day,target);if(replacing){if(existing?.source!==previous.source||existing.status!=='rejected')fail(409,'retry');storage.sql.exec("UPDATE moderation_queue SET photo_key=?,source=?,slot=?,status='pending',created_at=?,reviewed_at=NULL,reviewer=NULL WHERE queue_key=?",photoKey,source,slot,createdAt,queueKey);}else{if(existing&&existing.source!==source)fail(409,global?'global_already_recorded':'already_recorded');if(!existing)storage.sql.exec('INSERT INTO moderation_queue(queue_key,member,day,target,photo_key,source,slot,status,created_at) VALUES(?,?,?,?,?,?,?,?,?)',queueKey,actor.member,body.day,target,photoKey,source,slot,'pending',createdAt);}});
   return queued(actor.member,body.day,target);
  }
  async function approve(record,operator){
-  await active(record.member);const photo=await store.get(record.photo_key,{type:'arrayBuffer'});if(!photo||digest(Buffer.from(photo))!==record.source)fail(503,'unavailable');
+  await active(record.member);const valid=()=>rows('SELECT source,status FROM moderation_queue WHERE queue_key=?',record.queue_key)[0];if(valid()?.source!==record.source||valid()?.status==='rejected')fail(409,'moderation_reviewed');const photo=await store.get(record.photo_key,{type:'arrayBuffer'});if(!photo||digest(Buffer.from(photo))!==record.source)fail(503,'unavailable');
   if(record.target==='GLOBAL'){
    await globalFactory(store,{images,now:()=>Date.parse(record.day+'T12:00:00Z')}).record(record.day,record.member,'moderated',Buffer.from(photo));
    storage.sql.exec("UPDATE moderation_queue SET status='approved',reviewer=?,reviewed_at=? WHERE queue_key=?",operator.member,new Date(now()).toISOString(),record.queue_key);return;
@@ -69,6 +73,7 @@ export function humanModeration({store,storage,images,core,globalFactory,ErrorCl
    }
    await active(record.member);const saved=storage.transactionSync(()=>{
     const current=rows('SELECT etag FROM rooms WHERE key=?','rooms/'+next.code)[0];if(current?.etag!==previous.etag)return false;
+    if(valid()?.source!==record.source||valid()?.status==='rejected')fail(409,'moderation_reviewed');
     const memberRecord=rows('SELECT data FROM rooms WHERE key=?','members/'+record.member)[0];if(!memberRecord||JSON.parse(memberRecord.data).deleted)fail(401,'account_deleted');
     if(png){const name=digest(key)+'.image',bytes=Buffer.from(png);storage.sql.exec('INSERT INTO image_blobs(name,byte_length,sha256) VALUES(?,?,?) ON CONFLICT(name) DO UPDATE SET byte_length=excluded.byte_length,sha256=excluded.sha256',name,bytes.length,digest(bytes));storage.sql.exec('DELETE FROM image_chunks WHERE name=?',name);for(let offset=0,part=0;offset<bytes.length;offset+=65536,part++)storage.sql.exec('INSERT INTO image_chunks(name,part,bytes) VALUES(?,?,?)',name,part,bytes.subarray(offset,offset+65536));}
     storage.sql.exec('UPDATE rooms SET data=?,etag=? WHERE key=?',JSON.stringify(next),String(Number(previous.etag)+1),'rooms/'+next.code);
@@ -77,7 +82,8 @@ export function humanModeration({store,storage,images,core,globalFactory,ErrorCl
    });if(saved)return;
   }fail(409,'retry');
  }
- return {async execute(body,actor,credential){
+ // Internal controller only; it is never exposed as a client action or a DO RPC.
+ return {publishForAutomatic:record=>approve(record,{member:null}),async execute(body,actor,credential){
   if(typeof body.action!=='string')fail(400,'invalid');
   if(value&&!config)fail(503,'unavailable');
   const operator=Boolean(config?.enabled&&config.operators.includes(actor.account?.username));if(body.action==='moderation.capabilities')return {operator,enabled:Boolean(config?.enabled)};

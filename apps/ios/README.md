@@ -103,7 +103,7 @@ Web・iOS両方のJavaScriptとHTMLのキャッシュ更新を確認します。
 
 `MODERATION_CONFIG` は `enabled` と担当者のアカウントID配列 `operators` を持つシークレット。
 通常環境の担当者は利用者が指定する。審査環境では `review_one` に限定して審査用画像の確認を試せる。
-両方で、未承認の画像は共同作品・GLOBAL・公開サムネイルへ流さない。
+自動審査を無効にしている場合、両方で未承認の画像は共同作品・GLOBAL・公開サムネイルへ流さない。
 元写真の確認・承認・非公開は `/moderation/`（審査環境は `?mode=review`）から行う。
 通常データを審査モードへ複製せず、利用者の投稿を検証用に作成・削除しない。
 
@@ -122,6 +122,10 @@ Web・iOS両方のJavaScriptとHTMLのキャッシュ更新を確認します。
 作品の「通報する」からシールを選ぶ。運営者の操作は設定の「通報の確認」、
 または `/reports/`（審査は `?mode=review`）。判断・除去記録は環境ごとのSQLiteに置く。
 仕様と制限は [CONTENT-REPORTS.md](./CONTENT-REPORTS.md) を参照する。
+
+Xserverの自動審査・仮公開・締切までの撮り直し・iOS通知は
+[AUTOMATIC-IMAGE-REVIEW.md](./AUTOMATIC-IMAGE-REVIEW.md) を参照する。
+自動審査とアプリ内通知は公開済み。ネイティブ通知は次のTestFlightビルドでの実機確認が必要。
 
 `prepare-safety.mjs` は、既知の公開済みruntime、公開／iOSのscript map、審査用files map、
 出力フォルダーを引数に取り、ガード付きの差分を用意する。古いcheckoutを公開しない。

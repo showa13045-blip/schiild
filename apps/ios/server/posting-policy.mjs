@@ -16,7 +16,7 @@ export const postingCopy={
  hi:{title:'पोस्ट करने के नियम',agree:'मेरे पास ज़रूरी अधिकार हैं और मैं पोस्ट करने के नियमों तथा साझा कलाकृतियों में इस फ़ोटो के उपयोग से सहमत हूँ।',summary:'केवल अपनी खींची हुई फ़ोटो पोस्ट करें, जिनके लिए ज़रूरी अनुमति आपके पास हो। साझा कलाकृतियाँ और छोटे चित्र आपके चुने हुए स्थानों पर दिखेंगे। खाता मिटाने पर मूल फ़ोटो मिट जाएँगी; साझा कलाकृतियाँ आपके खाते से अलग होकर बनी रहेंगी।'}
 };
 
-const reviewNotice={
+export const reviewNotice={
  ja:'公開前に運営者が元写真を確認します。承認後、記録した日の作品へ反映され、過去の作品が更新される場合もあります。',
  en:'Our team reviews the original photo before publication. Approved photos are added to the artwork for their original date, so past artworks may be updated. ',
  ko:'공개 전에 운영자가 원본 사진을 확인합니다. 승인된 사진은 기록한 날짜의 작품에 반영되므로 과거 작품이 업데이트될 수 있습니다. ',

@@ -7,7 +7,7 @@ export function validAPNSToken(value){return typeof value==='string'&&/^[a-fA-F0
 export async function sendAPNS(subscription,payload,value,ttl,{request=fetch,now=()=>Date.now()}={}){
  const config=readAPNSConfig(value);if(!config||!validAPNSToken(subscription.token))return {status:503};
  const origin=config.environment==='production'?'https://api.push.apple.com':'https://api.sandbox.push.apple.com';
- const response=await request(origin+'/3/device/'+subscription.token,{method:'POST',redirect:'error',signal:AbortSignal.timeout(10000),headers:{authorization:'bearer '+providerToken(config,now()),'Content-Type':'application/json','apns-topic':config.topic,'apns-push-type':'alert','apns-priority':'10','apns-expiration':String(Math.floor(now()/1000)+Math.min(3600,Math.max(1,ttl))),'apns-collapse-id':payload.tag.slice(0,64)},body:JSON.stringify({aps:{alert:{title:payload.title,body:payload.body}},url:payload.url})});
+ const response=await request(origin+'/3/device/'+subscription.token,{method:'POST',redirect:'manual',signal:AbortSignal.timeout(10000),headers:{authorization:'bearer '+providerToken(config,now()),'Content-Type':'application/json','apns-topic':config.topic,'apns-push-type':'alert','apns-priority':'10','apns-expiration':String(Math.floor(now()/1000)+Math.min(3600,Math.max(1,ttl))),'apns-collapse-id':payload.tag.slice(0,64)},body:JSON.stringify({aps:{alert:{title:payload.title,body:payload.body}},url:payload.url})});
  if(response.status===200){await response.body?.cancel();return {status:200};}let body;try{body=await response.json();}catch{}
  if(response.status===410||['BadDeviceToken','DeviceTokenNotForTopic','Unregistered'].includes(body?.reason))return {status:410};return {status:response.status===429?429:503};
 }

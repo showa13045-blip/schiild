@@ -1,0 +1,40 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {DatabaseSync} from 'node:sqlite';import {createHash} from 'node:crypto';import {createRequire} from 'node:module';import {pathToFileURL} from 'node:url';
+import {metadataStore} from '../../demo/cloudflare/metadata-store.mjs';import {sqliteImages,imageFilename} from '../../demo/cloudflare/sqlite-images.mjs';import {workerImages} from '../../demo/cloudflare/images.mjs';import {accounts} from '../../demo/server/accounts.mjs';import {createAtelierService,ApiError} from '../../demo/server/atelier-core.mjs';import {globalService} from '../../demo/server/global-service.mjs';
+import {humanModeration} from '../server/human-moderation.mjs';import {automaticModeration} from '../server/automatic-moderation.mjs';import {automaticImageStore} from '../server/automatic-photo-state.mjs';import {community} from '../server/community.mjs';import {normalizeProfileIcon} from '../server/profile-icon-image.mjs';import {AUTOMATIC_POLICY_VERSION,classifyImageResult} from '../server/automatic-policy.mjs';
+const config={enabled:true,endpoint:'https://test.pickleballnavi.jp/schiild-image-review.cgi',key:'a'.repeat(64)},hash=bytes=>createHash('sha256').update(bytes).digest('hex');
+test('provisional posts, exact retraction, private notices, same-day trusted retry and stale avatar decisions',async()=>{
+ const db=new DatabaseSync(':memory:'),storage={sql:{exec(query,...args){const statement=db.prepare(query);if(/^\s*(SELECT|PRAGMA)/i.test(query))return {toArray:()=>statement.all(...args)};statement.run(...args);return {toArray:()=>[]};}},transactionSync(fn){db.exec('BEGIN');try{const result=fn();db.exec('COMMIT');return result;}catch(error){db.exec('ROLLBACK');throw error;}}};storage.sql.exec('CREATE TABLE rooms(key TEXT PRIMARY KEY,data TEXT NOT NULL,etag TEXT NOT NULL)');
+ const store=automaticImageStore(metadataStore(storage,sqliteImages(storage)),storage);let time=Date.parse('2026-11-02T12:00:00Z'),verdict='reject',calls=0;const now=()=>time,auth=accounts(store,{images:workerImages,now}),people={},operatorConfig=JSON.stringify({enabled:true,operators:['operator_one']});
+ const require=createRequire(new URL('../../demo/package.json',import.meta.url)),sharp=(await import(pathToFileURL(require.resolve('sharp')).href)).default;
+ const photos=await Promise.all(['#dc623b','#2497bb','#daca40'].map(background=>sharp({create:{width:1080,height:1080,channels:3,background}}).jpeg().toBuffer()));const retainedSource=hash(await workerImages.normalize(photos[1])),data=bytes=>'data:image/jpeg;base64,'+bytes.toString('base64');
+ for(const [index,name]of ['operator_one','member_two','outsider_three'].entries()){const result=await auth.execute({action:'account.register',username:name,password:'TestOnly-Password-2026',name},String(index+1).repeat(64));people[name]={...result,actor:await auth.identity(result.token)};}
+ function controller(name){const user=people[name],actor=user?.actor??{member:'public',account:null},credential=user?.token??'e'.repeat(64),base=createAtelierService(store,{now,images:workerImages,memberForCredential:()=>actor.member,publicOnly:!actor.account});
+  const publisher=humanModeration({store,storage,images:workerImages,core:base,globalFactory:globalService,ErrorClass:ApiError,config:operatorConfig,now});
+  const social=community({storage,core:(body,token)=>publisher.execute(body,actor,token),ErrorClass:ApiError,config:operatorConfig,now,normalizeIcon:normalizeProfileIcon});
+  const auto=automaticModeration({storage,store,images:workerImages,core:(body,token)=>social.execute(body,actor,token),publisher,ErrorClass:ApiError,config,operatorConfig,now,analyze:async bytes=>{calls++;return classifyImageResult({model:'OwenElliott/image-safety-classifier-s',revision:'015042b0eab17f1b17f2986527386346fb0d94be',...(verdict==='reject'&&hash(bytes)!==retainedSource?{decision:'rejected',reasons:['gore'],scores:{gore:.98,sexual:.01,clear:.01}}:{decision:'approved',reasons:[],scores:{gore:.01,sexual:.01,clear:.98}})});}});
+  return {...auto,call:(action,body={})=>auto.execute({action,...body},actor,credential)};
+ }
+ const call=(name,action,body)=>controller(name).call(action,body),consent={automaticConsentVersion:AUTOMATIC_POLICY_VERSION};
+ try{
+  const room=await call('operator_one','create',{name:'Window',capacity:5}),scope={code:room.code,day:room.day};await call('member_two','join',{code:room.code});
+  await assert.rejects(call('member_two','post',{...scope,photo:data(photos[0])}),e=>e.code==='review_consent_required');
+  const posted=await call('member_two','post',{...scope,photo:data(photos[0]),...consent});assert.equal(posted.hasPhoto,true);assert.equal(posted.moderationStatus,'pending');assert.equal(calls,0);
+  assert.equal((await call('operator_one','state',{code:room.code})).postedSlots.length,1);
+  await call('operator_one','post',{...scope,photo:data(photos[1]),...consent});await call('operator_one','generate',scope);
+  await call('member_two','global.record',{day:room.day,sourceCode:room.code,...consent});
+  const member=people.member_two.actor.member,record=storage.sql.exec('SELECT * FROM moderation_queue WHERE member=? AND target=?',member,room.code).toArray()[0];const original=record.photo_key;
+  assert((await store.getWithMetadata('globals/'+room.day,{type:'json'})).data.pixels[member]);
+  // A ready work must rebuild after removing only this participant, retaining the other photo.
+  await controller('operator_one').drain();
+  const after=await call('member_two','state',{code:room.code});assert.equal(after.hasPhoto,false);assert.equal(after.moderationStatus,'rejected');assert.equal(after.postedSlots.length,1);assert.equal(storage.sql.exec('SELECT source FROM moderation_queue WHERE member=?',people.operator_one.actor.member).toArray()[0].source,retainedSource);
+  assert.equal(await store.get(original,{type:'arrayBuffer'}),null);assert.equal(storage.sql.exec('SELECT name FROM image_blobs WHERE name=?',imageFilename(original)).toArray().length,0);
+  assert.equal((await store.getWithMetadata('globals/'+room.day,{type:'json'})).data.pixels[member],undefined);
+  const notices=(await call('member_two','automatic.notices')).items;assert.equal(notices.length,1);assert.deepEqual(notices[0].reasons,['gore']);assert.equal(notices[0].canRetry,true);assert.equal((await call('outsider_three','automatic.notices')).items.length,0);
+  await assert.rejects(call('outsider_three','post',{...scope,photo:data(photos[2]),...consent,retryNoticeKey:notices[0].key}),e=>e.status===403);
+  await assert.rejects(call('member_two','post',{...scope,photo:data(photos[2]),...consent}),e=>e.code==='already_recorded');
+  verdict='allow';await call('member_two','post',{...scope,photo:data(photos[2]),...consent,retryNoticeKey:notices[0].key});await controller('operator_one').drain();assert.equal((await call('member_two','state',{code:room.code})).hasPhoto,true);assert.equal((await call('member_two','state',{code:room.code})).moderationStatus,undefined);assert.equal((await call('member_two','state',{code:room.code})).automaticReviewStatus,'complete');
+  time=Date.parse('2026-11-03T00:00:00.000Z');assert.equal((await call('member_two','automatic.notices')).items[0].canRetry,false);await assert.rejects(call('member_two','post',{...scope,photo:data(photos[1]),...consent,retryNoticeKey:notices[0].key}),e=>e.code==='window_closed');
+  const first=await call('member_two','social.icon.submit',{photo:data(photos[0]),...consent});time+=11000;const second=await call('member_two','social.icon.submit',{photo:data(photos[1]),...consent});const count=calls;await controller('operator_one').drain();assert.equal(calls,count+1);assert.equal(storage.sql.exec('SELECT icon_key FROM profile_icons WHERE status=?','approved').toArray()[0].icon_key,second.key);assert.equal(storage.sql.exec('SELECT icon_key FROM profile_icons WHERE icon_key=?',first.key).toArray().length,0);
+  assert(!JSON.stringify(await call('operator_one','automatic.status')).includes(config.key));await assert.rejects(call('member_two','automatic.status'),e=>e.status===403);
+ }finally{db.close();}
+});

@@ -8,8 +8,11 @@ import {pushDigest,EVENT_TTL} from './notification-events.mjs';
 import {pushText} from '../src/push-copy.ts';
 import {localeTags} from '../src/locale-info.ts';
 import {localizedDate} from '../src/locale-dates.ts';
-const kinds=['atelierReady','globalReady','post'],locales=Object.keys(localeTags);
-const defaults={atelierReady:true,globalReady:true,post:true};
+import {automaticCopy} from '../../ios/server/automatic-copy.mjs';
+import {readAPNSConfig,validAPNSToken,sendAPNS} from '../../ios/server/native-notifications.mjs';
+const kinds=['atelierReady','globalReady','post','moderation'],locales=Object.keys(localeTags);
+const defaults={atelierReady:true,globalReady:true,post:true,moderation:true};
+const linked=account=>Boolean(account?.lineSubject||account?.whatsappSubject||account?.appleSubject);
 const fail=(status,code)=>{throw new ApiError(status,code);};
 const read=(store,key)=>store.getWithMetadata(key,{type:'json'});
 export function readPushConfig(value){
@@ -33,23 +36,24 @@ function subscriptionInput(value){
 }
 const deviceProof=body=>{if(!/^[a-f0-9]{64}$/.test(body.clientKey??''))fail(400,'push_invalid');return pushDigest(body.clientKey);};
 const deviceKey=body=>{if(typeof body.endpoint!=='string'||body.endpoint.length>2048)fail(400,'push_invalid');return `push-subscriptions/${pushDigest(body.endpoint)}`;};
-export function notificationService(store,{config,images,now=()=>Date.now(),send=sendPush,requireLine=false}={}){
+export function notificationService(store,{config,apnsConfig,images,now=()=>Date.now(),send=sendPush,sendNative=sendAPNS,requireLine=false}={}){
  config=readPushConfig(config);
- async function preference(member){return (await read(store,`push-preferences/${member}`))?.data??{member,preferences:{...defaults},enabledSince:Object.fromEntries(kinds.map(kind=>[kind,now()]))};}
+ apnsConfig=readAPNSConfig(apnsConfig);
+ async function preference(member){const row=(await read(store,`push-preferences/${member}`))?.data;return row?{...row,preferences:{...defaults,...row.preferences},enabledSince:{moderation:0,...row.enabledSince}}:{member,preferences:{...defaults},enabledSince:Object.fromEntries(kinds.map(kind=>[kind,now()]))};}
  async function live(sub){
   const session=(await read(store,sub.sessionKey))?.data;
   if(!session||session.revoked||session.deleted||session.expires<=now()||session.member!==sub.member)return false;
-  const account=(await read(store,`accounts/${session.username}`))?.data;return account?.member===sub.member&&(!requireLine||Boolean(account.lineSubject));
+  const account=(await read(store,`accounts/${session.username}`))?.data;return account?.member===sub.member&&(!requireLine||linked(account));
  }
  async function execute(body,actor){
   if(!actor.account||!actor.sessionKey)fail(401,'unauthorized');
-  if(requireLine&&!actor.account.lineSubject)fail(403,'line_required');
-  if(body.action==='push.config')return {enabled:Boolean(config),publicKey:config?.publicKey??null,preferences:(await preference(actor.member)).preferences};
+  if(requireLine&&!linked(actor.account))fail(403,'line_required');
+  if(body.action==='push.config')return {enabled:Boolean(config),nativeEnabled:Boolean(apnsConfig),publicKey:config?.publicKey??null,preferences:(await preference(actor.member)).preferences};
   if(body.action==='push.preferences'){
-   if(!body.preferences||kinds.some(kind=>typeof body.preferences[kind]!=='boolean'))fail(400,'push_invalid');
+   if(!body.preferences||kinds.some(kind=>kind!=='moderation'&&typeof body.preferences[kind]!=='boolean')||body.preferences.moderation!==undefined&&typeof body.preferences.moderation!=='boolean')fail(400,'push_invalid');
    for(let n=0;n<10;n++){
-    const key=`push-preferences/${actor.member}`,row=await read(store,key),old=row?.data??await preference(actor.member);
-    const preferences=Object.fromEntries(kinds.map(kind=>[kind,body.preferences[kind]])),enabledSince=Object.fromEntries(kinds.map(kind=>[kind,preferences[kind]&&!old.preferences[kind]?now():old.enabledSince[kind]]));
+    const key=`push-preferences/${actor.member}`,row=await read(store,key),old=await preference(actor.member);
+    const preferences=Object.fromEntries(kinds.map(kind=>[kind,body.preferences[kind]??old.preferences[kind]])),enabledSince=Object.fromEntries(kinds.map(kind=>[kind,preferences[kind]&&!old.preferences[kind]?now():old.enabledSince[kind]]));
     if((await store.setJSON(key,{member:actor.member,preferences,enabledSince},row?{onlyIfMatch:row.etag}:{onlyIfNew:true})).modified)return {preferences};
    }fail(409,'retry');
   }
@@ -74,6 +78,14 @@ export function notificationService(store,{config,images,now=()=>Date.now(),send
    const prefKey=`push-preferences/${actor.member}`;await store.setJSON(prefKey,await preference(actor.member),{onlyIfNew:true});
    return {active:true,preferences:(await preference(actor.member)).preferences};
   }
+  if(body.action==='push.native.subscribe'){
+   if(!apnsConfig)fail(503,'push_unavailable');if(!validAPNSToken(body.token)||!locales.includes(body.language))fail(400,'push_invalid');
+   const token=body.token.toLowerCase(),endpoint='apns:app.schiild.mobile:'+token,proof=deviceProof(body),key='push-subscriptions/'+pushDigest(endpoint),row=await read(store,key);
+   if(row&&(row.data.proof!==proof||row.data.member!==actor.member&&await live(row.data)))fail(403,'forbidden');
+   if(!row&&(await listRecords(store,'push-subscriptions/')).filter(row=>row.data.member===actor.member&&!row.data.disabled).length>=20)fail(400,'push_invalid');
+   const data={member:actor.member,sessionKey:actor.sessionKey,subscription:{kind:'apns',token},proof,language:body.language,registeredAt:row?.data.member===actor.member&&row.data.sessionKey===actor.sessionKey&&!row.data.disabled?row.data.registeredAt:now(),disabled:false};
+   if(!(await store.setJSON(key,data,row?{onlyIfMatch:row.etag}:{onlyIfNew:true})).modified)fail(409,'retry');await store.setJSON('push-preferences/'+actor.member,await preference(actor.member),{onlyIfNew:true});return {active:true,endpoint,preferences:(await preference(actor.member)).preferences};
+  }
   fail(400,'invalid');
  }
  async function eligible(event,sub){
@@ -83,6 +95,8 @@ export function notificationService(store,{config,images,now=()=>Date.now(),send
   return true;
  }
  async function payload(event,sub){
+  // Details stay in the authenticated inbox, never on a lock screen.
+  if(event.kind==='moderation'){const text=automaticCopy[sub.language]??automaticCopy.en;return {title:'Schiild',body:text.title,tag:`schiild-${event.eventId}`,url:'/moderation-notices/?lang='+encodeURIComponent(sub.language),icon:'/app-icons/icon-192.png'};}
   const atelier=event.code?(await read(store,`rooms/${event.code}`))?.data.name??'Schiild':'',language=sub.language;
   const date=localizedDate(event.day,'notification',language);
   const prefix={atelierReady:'ready',globalReady:'global',post:'post'}[event.kind];
@@ -90,7 +104,7 @@ export function notificationService(store,{config,images,now=()=>Date.now(),send
   return {title:pushText(`demo.push.${prefix}_title`,language),body:pushText(`demo.push.${prefix}_body`,language,{atelier,date}),tag:`schiild-${event.eventId}`,url:'/?'+query,icon:'/app-icons/icon-192.png'};
  }
  async function drain(){
-  if(!config)return;
+  if(!config&&!apnsConfig)return;
   const subscriptions=await listRecords(store,'push-subscriptions/'),events=await listRecords(store,'push-events/');let budget=30,nextAlarm=Infinity;
   for(const {key:eventKey,data:event} of events){
    if(event.expiresAt<=now()){await store.deleteJSON(eventKey);continue;}
@@ -107,7 +121,7 @@ export function notificationService(store,{config,images,now=()=>Date.now(),send
     const current=await read(store,subscription.key),currentEvent=await read(store,eventKey);
     if(current&&currentEvent&&await eligible(currentEvent.data,current.data)){
      try{
-      const message=await payload(event,current.data);const response=await send(current.data.subscription,message,config,Math.min(3600,Math.max(1,Math.floor((event.expiresAt-now())/1000))));
+      const message=await payload(event,current.data),ttl=Math.min(3600,Math.max(1,Math.floor((event.expiresAt-now())/1000))),response=current.data.subscription.kind==='apns'?await sendNative(current.data.subscription,message,apnsConfig,ttl):await send(current.data.subscription,message,config,ttl);
       if(response.status===404||response.status===410){await store.setJSON(subscription.key,{...current.data,disabled:true},{onlyIfMatch:current.etag});}
       else if(response.status===429||response.status>=500){done=false;const delay=Math.min(3600000,30000*2**Math.min(attempt.attempts,6));nextAt=now()+delay;}
       // Other 4xx indicate invalid subscription/config; no unbounded retry loop.
@@ -122,7 +136,7 @@ export function notificationService(store,{config,images,now=()=>Date.now(),send
   return Number.isFinite(nextAlarm)?nextAlarm:null;
  }
  async function finalizeGlobal(){
-  if(!config||!images)return;
+  if(!config&&!apnsConfig||!images)return;
   // UTC 00:15, shared by all users. Never send a backfill for old works on deployment.
   const stamp=now(),today=new Date(stamp).toISOString().slice(0,10),midnight=Date.parse(today+'T00:00:00Z');if(stamp-midnight<15*60000)return;
   const day=new Date(midnight-86400000).toISOString().slice(0,10),createdAt=midnight+15*60000,eventId=pushDigest('globalReady/'+day),key=`push-events/${eventId}`;
@@ -131,7 +145,7 @@ export function notificationService(store,{config,images,now=()=>Date.now(),send
   const recipients=[...new Set((await listRecords(store,'push-subscriptions/')).filter(row=>!row.data.disabled&&row.data.registeredAt<=createdAt).map(row=>row.data.member))];
   await store.setJSON(key,{eventId,kind:'globalReady',day,recipients,createdAt,expiresAt:createdAt+EVENT_TTL},{onlyIfNew:true});
  }
- return {execute,drain,finalizeGlobal,enabled:Boolean(config)};
+ return {execute,drain,finalizeGlobal,enabled:Boolean(config||apnsConfig)};
 }
 async function sendPush(subscription,payload,config,ttl){
  const details=webpush.generateRequestDetails(subscription,JSON.stringify(payload),{vapidDetails:config,TTL:ttl,urgency:'normal'});
