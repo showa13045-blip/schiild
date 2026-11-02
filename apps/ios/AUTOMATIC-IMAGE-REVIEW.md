@@ -10,7 +10,7 @@ Hugging Face, Azure or another external inference service. No paid inference pla
 The Xserver gateway stores no photographs or verdicts; only short-lived HMAC replay nonces.
 Existing application records, account authentication and durable review jobs remain on Cloudflare.
 See [local service details](../image-review/README.md) for model provenance, scope and benchmark limitations.
-No retrospective scan of existing photos or the old manual backlog is performed.
+Previously accepted photos still waiting in the old private moderation queue are now handed to automatic review. They remain private until an allow verdict. This service-policy transition is audited separately from explicit submission consent; no contributor checkbox is invented. Already approved photos are not rescanned. A saved allow verdict also repairs an interrupted publication without another model call. Old transport-failure backoffs are made due once by a versioned recovery marker.
 
 The Schiild-only, production, topic-specific APNs key has been created with the user's approval.
 It is stored in Windows Credential Manager (`LocalApiKeys/schiild-apns`) and the protected local

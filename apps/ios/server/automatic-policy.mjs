@@ -2,6 +2,8 @@
 export const AUTOMATIC_POLICY_VERSION='2026-11-02.local1';
 export const AUTOMATIC_PROVIDER='xserver-local-onnx';
 export const AUTOMATIC_RETRY=Symbol('automatic-rejected-photo-retry');
+// Internal service migration authority. A JSON request cannot claim user consent.
+export const AUTOMATIC_LEGACY=Symbol('existing-pending-review-transition');
 export const IMAGE_CATEGORIES=['sexual','gore'];
 export const MODEL_REPOSITORY='OwenElliott/image-safety-classifier-s';
 export const MODEL_REVISION='015042b0eab17f1b17f2986527386346fb0d94be';
