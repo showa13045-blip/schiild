@@ -57,6 +57,7 @@ reference = group.new_file(File.expand_path('apps/ios/.simulator-capture/Capture
 target.add_file_references([reference])
 target.build_configurations.each do |config|
  config.build_settings['GENERATE_INFOPLIST_FILE'] = 'YES'
+ config.build_settings['PRODUCT_NAME'] = '$(TARGET_NAME)'
  config.build_settings['PRODUCT_BUNDLE_IDENTIFIER'] = 'app.schiild.mobile.capturetests'
  config.build_settings['SWIFT_VERSION'] = '5.0'
  config.build_settings['TEST_TARGET_NAME'] = app.name
