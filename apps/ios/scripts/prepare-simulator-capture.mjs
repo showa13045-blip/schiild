@@ -27,7 +27,7 @@ final class CaptureUITests: XCTestCase {
    try XCTUnwrap(global.allElementsBoundByIndex.last).tap()
    Thread.sleep(forTimeInterval: 4)
    save(app, language, "02-global")
-   let archive = app.buttons.matching(NSPredicate(format: "label == %@", labels[language]!))
+   let archive = app.buttons.matching(NSPredicate(format: "label == %@", try XCTUnwrap(labels[language])))
    XCTAssertTrue(archive.firstMatch.waitForExistence(timeout: 30))
    try XCTUnwrap(archive.allElementsBoundByIndex.last).tap()
    Thread.sleep(forTimeInterval: 4)
@@ -70,6 +70,8 @@ scheme.launch_action.build_configuration = 'Release'
 scheme.test_action.build_configuration = 'Release'
 scheme.save_as(project_path, 'SchiildCapture', true)
 `);
+// Interpreter directive in generated shell code, never product text.
+// eslint-disable-next-line schiild/product-copy
 await writeFile(path.join(out,'run.sh'),`#!/bin/bash
 set -euo pipefail
 ruby apps/ios/.simulator-capture/add-target.rb
