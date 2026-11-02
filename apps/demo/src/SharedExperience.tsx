@@ -96,12 +96,13 @@ export default function SharedExperience({entry,onManage,onShare,onAccount,onPos
     <div className="today-details"><span className="mono">{state.day.replaceAll('-',' / ')}</span><span className="recorded mono">{t('atelier.recorded',{n:state.postedSlots.length,cap:state.capacity})}</span></div>
     <p className="window">{t('atelier.window',{start:short(state.day)+' 09:00',end:short(dayAfter(state.day))+' 09:00'})}</p>
     <AreaDisplay area={state.area}/><ModerationNotice status={state.moderationStatus}/>
+    <ChatLink code={entry.code} day={state.day}/>
     <div className="shared-actions">
      {state.status==='ready'?<ActionIconButton kind="open" label={t('reveal.open')} disabled={busy} onClick={()=>void open(state.day)}/>:<>
       {state.hasPhoto?state.moderationStatus?null:<div className="posted"><p>{t('demo.shared.saved')}</p></div>:state.status==='open'&&<button className="button" disabled={isWeekPreview} onClick={()=>go('camera')}>{t('onboarding.1.title')}</button>}
       {state.canGenerate&&state.postedSlots.length>0?<><button className="button secondary" disabled={busy} onClick={()=>setConfirm(true)}>{t(state.status==='generating'?'common.retry':'demo.shared.generate')}</button></>:state.hasPhoto&&<p className="shared-status">{t('demo.shared.wait_short')}</p>}
      </>}
-     {state.status==='open'&&<div className="draft-actions"><p className="wall-label">{t('demo.draft.label')}</p><button className="button secondary" disabled={busy||state.postedSlots.length===0} onClick={()=>void preview()}>{t(busy?'demo.draft.loading':'demo.draft.generate')}</button></div>}
+     {state.status==='open'&&<div className="draft-actions"><button className="button secondary" disabled={busy||state.postedSlots.length===0} onClick={()=>void preview()}>{t(busy?'demo.draft.loading':'demo.draft.generate')}</button></div>}
     </div>
     <div className="section-heading"><h2>{t('atelier.past')}</h2><button className="text-button" onClick={()=>go('archive')}>{t('archive.title')}</button></div>
     <div className="atelier-list">{state.works.slice(0,3).map(item=><button className="atelier-select" key={item.day} disabled={busy} onClick={()=>void open(item.day)}><span className="mono">{item.day}</span><span className="mono">{t('schiild.label',{index:item.index})}</span></button>)}</div>
