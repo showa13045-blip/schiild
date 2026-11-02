@@ -10,6 +10,7 @@ export const nativeBridge=`(()=>{
  });
  window.addEventListener('schiild-native-result',event=>{const value=event.detail,entry=pending.get(value?.requestId);if(entry===undefined)return;pending.delete(value.requestId);clearTimeout(entry.timer);if(value.ok)entry.resolve(value.result);else entry.reject(new DOMException('Cancelled','AbortError'));});
  window.schiildApple={signIn:value=>call('apple',value)};
+ window.schiildNotifications={enable:()=>call('notifications',{intent:'enable'}),status:()=>call('notifications',{intent:'status'}),clear:()=>call('notifications',{intent:'clear'})};
  Object.defineProperty(navigator,'share',{configurable:true,value:value=>call('share',{text:value.text||'',title:value.title,url:value.url})});
  if(navigator.clipboard)Object.defineProperty(navigator.clipboard,'writeText',{configurable:true,value:text=>call('clipboard',{text})});
  }})();true;`;

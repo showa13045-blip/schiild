@@ -28,14 +28,22 @@ export function externalURL(value:string){
  try{const url=new URL(value);return url.protocol==='https:'&&!url.username&&!url.password?url.href:null;}catch{return null;}
 }
 export type AppleMessage={requestId:string;action:'apple';state:string;nonce:string;intent:'login'|'register'|'delete'};
-export type NativeMessage=AppleMessage|{requestId:string;action:'share'|'clipboard';text:string;url?:string;title?:string};
+export type NativeMessage=AppleMessage|{requestId:string;action:'notifications';intent:'enable'|'status'|'clear'}|{requestId:string;action:'share'|'clipboard';text:string;url?:string;title?:string};
 export function nativeMessage(data:string):NativeMessage|null{
  if(data.length>12000)return null;
  try{const value=JSON.parse(data);if(!value||!/^native-[0-9]+$/.test(value.requestId))return null;
   if(value.action==='apple')return /^[a-f0-9]{64}$/.test(value.state??'')&&/^[a-f0-9]{64}$/.test(value.nonce??'')&&['login','register','delete'].includes(value.intent)?value:null;
+  if(value.action==='notifications')return ['enable','status','clear'].includes(value.intent)?value:null;
   if(!['share','clipboard'].includes(value.action)||typeof value.text!=='string'||value.text.length>4096)return null;
   if(value.url!==undefined&&(!isAppURL(value.url)||value.url.length>4096))return null;
   if(value.title!==undefined&&(typeof value.title!=='string'||value.title.length>128))return null;
   return value;
  }catch{return null;}
+}
+export function notificationURL(value:unknown){
+ if(typeof value!=='string'||value.length>2048)return null;
+ try{const url=new URL(value,APP_ORIGIN);if(!isAppURL(url.href))return null;
+  if(url.pathname==='/moderation-notices/'&&[...url.searchParams.keys()].every(key=>key==='lang')&&['ja','en','fr','nl','es','it','ko','id','km','hi'].includes(url.searchParams.get('lang')??''))return url.href;
+  if(url.pathname==='/'&&['global','atelier'].includes(url.searchParams.get('push')??'')&&/^\d{4}-\d{2}-\d{2}$/.test(url.searchParams.get('day')??'')&&(!url.searchParams.has('code')||/^[A-Z0-9]{8}$/.test(url.searchParams.get('code')??'')))return url.href;
+ }catch{}return null;
 }

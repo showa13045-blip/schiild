@@ -1,0 +1,13 @@
+// DEMO/iOS ONLY. Direct APNs delivery; image bytes and review reasons never enter APNs.
+import {createPrivateKey,createHash,sign} from 'node:crypto';
+const tokens=new Map();
+export function readAPNSConfig(value){try{const input=typeof value==='string'?JSON.parse(value):value;if(!input||input.teamId!=='PQ7WUU6HWC'||input.topic!=='app.schiild.mobile'||!/^[A-Z0-9]{10}$/.test(input.keyId)||typeof input.privateKey!=='string'||input.privateKey.length>4096||!['production','sandbox'].includes(input.environment))return null;const key=createPrivateKey(input.privateKey);if(key.asymmetricKeyType!=='ec'||key.asymmetricKeyDetails?.namedCurve!=='prime256v1')return null;return {...input,key};}catch{return null;}}
+function providerToken(config,now){const cacheKey=createHash('sha256').update(config.privateKey).digest('hex'),cached=tokens.get(cacheKey);if(cached&&now-cached.created<50*60000)return cached.jwt;const header=Buffer.from(JSON.stringify({alg:'ES256',kid:config.keyId})).toString('base64url'),claims=Buffer.from(JSON.stringify({iss:config.teamId,iat:Math.floor(now/1000)})).toString('base64url'),body=header+'.'+claims,jwt=body+'.'+sign('sha256',Buffer.from(body),{key:config.key,dsaEncoding:'ieee-p1363'}).toString('base64url');tokens.set(cacheKey,{jwt,created:now});if(tokens.size>4)tokens.delete(tokens.keys().next().value);return jwt;}
+export function validAPNSToken(value){return typeof value==='string'&&/^[a-fA-F0-9]{32,512}$/.test(value)&&value.length%2===0;}
+export async function sendAPNS(subscription,payload,value,ttl,{request=fetch,now=()=>Date.now()}={}){
+ const config=readAPNSConfig(value);if(!config||!validAPNSToken(subscription.token))return {status:503};
+ const origin=config.environment==='production'?'https://api.push.apple.com':'https://api.sandbox.push.apple.com';
+ const response=await request(origin+'/3/device/'+subscription.token,{method:'POST',redirect:'error',signal:AbortSignal.timeout(10000),headers:{authorization:'bearer '+providerToken(config,now()),'Content-Type':'application/json','apns-topic':config.topic,'apns-push-type':'alert','apns-priority':'10','apns-expiration':String(Math.floor(now()/1000)+Math.min(3600,Math.max(1,ttl))),'apns-collapse-id':payload.tag.slice(0,64)},body:JSON.stringify({aps:{alert:{title:payload.title,body:payload.body}},url:payload.url})});
+ if(response.status===200){await response.body?.cancel();return {status:200};}let body;try{body=await response.json();}catch{}
+ if(response.status===410||['BadDeviceToken','DeviceTokenNotForTopic','Unregistered'].includes(body?.reason))return {status:410};return {status:response.status===429?429:503};
+}

@@ -11,7 +11,7 @@ const config:ExpoConfig={
    ITSAppUsesNonExemptEncryption:false,CFBundleAllowMixedLocalizations:true,
    LSApplicationQueriesSchemes:['line','whatsapp'],
    NSAppTransportSecurity:{NSAllowsArbitraryLoads:false}}},
- plugins:['expo-apple-authentication','expo-web-browser'],
+ plugins:['expo-apple-authentication','expo-web-browser',['expo-notifications',{mode:'production'}]],
  extra:{eas:{projectId:'f6511507-2153-47f3-8e36-6285327747dd'}}
 };
 export default config;

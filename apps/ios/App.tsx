@@ -7,15 +7,22 @@ import {WebView} from 'react-native-webview';
 import * as WebBrowser from 'expo-web-browser';
 import * as Clipboard from 'expo-clipboard';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Notifications from 'expo-notifications';
 import officialCopy from '../demo/src/copy.json';
-import {APP_ORIGIN,APP_CALLBACK,isAppURL,lineAuthorization,lineReturn,externalURL,nativeMessage} from './src/policy';
+import {APP_ORIGIN,APP_CALLBACK,isAppURL,lineAuthorization,lineReturn,externalURL,nativeMessage,notificationURL} from './src/policy';
 import {nativeBridge,bridgeResult} from './src/bridge';
 import type {AppleMessage} from './src/policy';
+Notifications.setNotificationHandler({handleNotification:async()=>({shouldShowBanner:true,shouldShowList:true,shouldPlaySound:false,shouldSetBadge:false})});
 export default function App(){
  const web=useRef<WebView>(null),authBusy=useRef(false),currentURL=useRef(APP_ORIGIN+'/');
  const [uri,setUri]=useState(APP_ORIGIN+'/'),[revision,setRevision]=useState(0),[failed,setFailed]=useState(false);
  const [apple,setApple]=useState<AppleMessage|null>(null),[appleReady,setAppleReady]=useState(false),[appleBusy,setAppleBusy]=useState(false);
  useEffect(()=>{void AppleAuthentication.isAvailableAsync().then(setAppleReady).catch(()=>{});},[]);
+ useEffect(()=>{
+  const open=(response:Notifications.NotificationResponse|null)=>{const url=notificationURL(response?.notification.request.content.data?.url);if(url){setUri(url);setRevision(n=>n+1);void Notifications.clearLastNotificationResponseAsync();}};
+  void Notifications.getLastNotificationResponseAsync().then(open).catch(()=>{});
+  const listener=Notifications.addNotificationResponseReceivedListener(open);return()=>listener.remove();
+ },[]);
  function appleCancel(){if(apple)web.current?.injectJavaScript(bridgeResult(apple.requestId,false));authBusy.current=false;setApple(null);}
  async function appleAuthorize(){
   if(!apple||appleBusy||!appleReady)return;setAppleBusy(true);
@@ -46,6 +53,13 @@ export default function App(){
  async function message(data:string,source:string){
   if(!isAppURL(source)||!isAppURL(currentURL.current))return;
   const value=nativeMessage(data);if(!value)return;
+  if(value.action==='notifications'){
+   try{if(value.intent==='clear'){await Notifications.dismissAllNotificationsAsync();await Notifications.clearLastNotificationResponseAsync();web.current?.injectJavaScript(bridgeResult(value.requestId,true,{granted:false}));return;}
+    let permission=await Notifications.getPermissionsAsync();if(value.intent==='enable'&&permission.status!=='granted')permission=await Notifications.requestPermissionsAsync({ios:{allowAlert:true,allowBadge:false,allowSound:false}});
+    const granted=permission.granted||permission.ios?.status===Notifications.IosAuthorizationStatus.PROVISIONAL;
+    const token=granted?(await Notifications.getDevicePushTokenAsync()).data:undefined;web.current?.injectJavaScript(bridgeResult(value.requestId,true,{granted,token}));
+   }catch{web.current?.injectJavaScript(bridgeResult(value.requestId,false));}return;
+  }
   if(value.action==='apple'){if(!appleReady||authBusy.current||apple){web.current?.injectJavaScript(bridgeResult(value.requestId,false));return;}authBusy.current=true;setApple(value);return;}
   let ok=false;
   try{
