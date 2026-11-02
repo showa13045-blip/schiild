@@ -44,6 +44,6 @@ export function notificationURL(value:unknown){
  if(typeof value!=='string'||value.length>2048)return null;
  try{const url=new URL(value,APP_ORIGIN);if(!isAppURL(url.href))return null;
   if(url.pathname==='/moderation-notices/'&&[...url.searchParams.keys()].every(key=>key==='lang')&&['ja','en','fr','nl','es','it','ko','id','km','hi'].includes(url.searchParams.get('lang')??''))return url.href;
-  if(url.pathname==='/'&&['global','atelier'].includes(url.searchParams.get('push')??'')&&/^\d{4}-\d{2}-\d{2}$/.test(url.searchParams.get('day')??'')&&(!url.searchParams.has('code')||/^[A-Z0-9]{8}$/.test(url.searchParams.get('code')??'')))return url.href;
+  if(url.pathname==='/'&&[...url.searchParams.keys()].every(key=>['push','day','code','ready'].includes(key))&&['global','atelier'].includes(url.searchParams.get('push')??'')&&/^\d{4}-\d{2}-\d{2}$/.test(url.searchParams.get('day')??'')&&(!url.searchParams.has('code')||/^[A-Z0-9]{8}$/.test(url.searchParams.get('code')??''))&&(!url.searchParams.has('ready')||['0','1'].includes(url.searchParams.get('ready')??'')))return url.href;
  }catch{}return null;
 }
