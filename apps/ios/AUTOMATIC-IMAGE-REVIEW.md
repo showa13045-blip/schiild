@@ -16,7 +16,7 @@ The Schiild-only, production, topic-specific APNs key has been created with the 
 It is stored in Windows Credential Manager (`LocalApiKeys/schiild-apns`) and the protected local
 deployment folder, and copied to the Worker's `APNS_CONFIG` secret. The app's push capability
 is enabled; Apple sign-in remains enabled. The private key is excluded from Git and EAS archives.
-The current TestFlight build does not contain the new notification library.
+TestFlight build 6 contains the notification library. On 2026-11-03 the user reported checking chat, profile pictures and notifications on build 6 without issues.
 
 ## Policy and behavior
 
@@ -49,8 +49,7 @@ Expo Push Service is not used. APNs credentials use ES256, a fixed Schiild topic
 tokens, no redirects, bounded delivery retries, invalid-device retirement and the existing session,
 logout, account-deletion and preference checks. Notification taps accept only approved app routes.
 
-New iOS signing and a TestFlight build, followed by physical-device permission/delivery/tap/logout
-tests, are still required before claiming native push works. Hermes export is not an installed build.
+Build 6 has been signed and delivered through TestFlight. The user confirmed physical-device checks on 2026-11-03; automated transport/signature tests remain distinct from that user-reported verification.
 
 ## Configuration and activation
 
@@ -68,7 +67,7 @@ node apps/ios/scripts/prepare-automatic.mjs <foundation-runtime> <live-manifest.
 
 Before publishing, compare every live module hash with the fresh backup, preserve entrypoint/other modules/assets/secrets/accounts, and check the current plan's script limit. Enable only after signed inference succeeds over verified HTTPS. To disable new automatic handling, save `{"enabled":false}` to the same secret; do not erase user data. Previously accepted provisional submissions need explicit operational follow-up if the service is disabled while jobs remain.
 
-Verification: six Linux service tests passed on Xserver; app tests cover exact-source retraction, rebuilding and retaining others, notice privacy, stale avatar/account protection, leases, retries and UTC cutoff. Live isolated review data exercised provisional publication and completed through real Xserver inference after a durable retry. Synthetic/injected model verdicts test rejection; real harmful material was not uploaded. Native notification delivery on a physical device remains a separate next-build check.
+Verification: six Linux service tests passed on Xserver; app tests cover exact-source retraction, rebuilding and retaining others, notice privacy, stale avatar/account protection, leases, retries and UTC cutoff. Live isolated review data exercised provisional publication and completed through real Xserver inference after a durable retry. Synthetic/injected model verdicts test rejection; real harmful material was not uploaded. Physical-device checks of build 6 were reported successful by the user on 2026-11-03, separately from these automated checks.
 
 ## Verification
 

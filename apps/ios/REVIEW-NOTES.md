@@ -1,66 +1,35 @@
 # App Review用メモ
 
-2026-11-02。審査用資格情報と操作説明をApp Store Connectの下書きへ保存する。
-提出は未実行。EU27か国は対象外、無料、承認後は手動公開。
+2026-11-03。更新した操作説明をAppleへ保存し、build 6を審査提出済み。
+現在は審査待ち。EU27か国は対象外、無料、承認後は手動公開。
 
 ## English review instructions
 
-Schiild is a daily photo journal with shared pixel artworks and member-only group
-chat. No purchases, ads, trading, one-to-one messages, likes or follower counts.
+Schiild is a daily photo journal with shared pixel artworks and member-only group chat. No purchases, ads, trading, direct messages, likes or follower counts.
 
-For review, tap the Schiild logo, then App Review on the sign-in screen. Use the
-supplied review_one credentials. App Review is visibly labelled; its accounts,
-memberships, photos, works, queues and sessions are isolated from ordinary users.
-review_one is an operator only in this environment.
+For review, tap the Schiild logo, then App Review on the sign-in screen. Use the supplied review_one credentials. App Review is visibly labelled. Its accounts, memberships, photos, works, queues and sessions are isolated from ordinary users. review_one is an operator only in this environment.
 
-1. Create an atelier; choose a name, optional concept and visibility.
-2. Open Record today's schiil, allow the camera and take a photo. Read and accept
-   the posting rules, then confirm. Optionally select GLOBAL SCHIILD or another
-   eligible atelier. Each destination is explicit. Photos stay private pending review.
-3. Profile > Settings > Review photos: preview and approve the photo for each selected
-   destination. Return to the atelier. Members can preview after approval; the creator
-   can generate the finished work. Open the reveal and archive calendar.
-4. GLOBAL SCHIILD: pinch and drag; tap your area to zoom in.
-5. Profile > Settings > Delete account: Copy ID or select the displayed ID, enter it
-   and the supplied review password. Original photos, memberships, consent, pending
-   reviews, chat messages and profile pictures are erased; shared works remain
-   anonymous. Signing in again creates an empty test account.
+1. Create an atelier with a name, optional concept and visibility.
+2. Open Record today's schiil, allow the camera and take a photo. Read and accept the posting rules and image-check disclosure, then confirm. Optionally select GLOBAL SCHIILD or another eligible atelier. Each destination is explicit.
+3. New photos appear provisionally while Xserver checks sexual content and gore with a local ONNX model. Rejected images are removed from all recorded destinations; Settings > Image review updates explains the reason. Retakes replace only a rejected photo before its original UTC 00:00 daily deadline. Uncertain results request a different photo; model results do not verify copyright or consent. Settings > Automatic image review shows queue status to review_one. Older private pending submissions remain private until an allow verdict.
+4. Members can preview the atelier work. The creator can generate the finished work, open the reveal and use the archive calendar. GLOBAL SCHIILD supports pinch/drag; tap your area to zoom in. New atelier works partition among contributors only.
+5. Profile > Settings > Delete account: copy/select the ID, enter it and the supplied review password. Original photos, memberships, consents, review notices, chat messages and profile pictures are erased. Shared works remain anonymous. Review login again creates an empty test account.
 
-Reports: below an atelier work or GLOBAL, choose Report or block. Tap a contribution
-or enter its 1-based X/Y coordinates, select a reason and send. A report alone does
-not remove content. Settings > Review reports: preview the contribution, enter a
-decision note, then remove that schiil from the selected destination or dismiss.
-Other contributions and the custodian remain. GLOBAL compacts after removal;
-reports identify the same contribution even when coordinates change.
+Reports: below an atelier work or GLOBAL, choose Report or block, tap a contribution or enter 1-based X/Y coordinates, then send a reason. Reports alone do not remove content. Settings > Review reports lets review_one preview and remove the selected contribution or dismiss the report. Other contributions and the custodian remain. GLOBAL compacts; reports still identify the same contribution.
 
-Blocking: select a contribution in Report or block, then Block this person. Their
-contributions are hidden only from your view in works, archives and GLOBAL zoom.
-Shared works and coordinates remain intact. Blocks persist across sign-ins;
-Settings > Blocked people offers Unblock. Deletion erases your block list.
+Blocking hides that person's contributions only from your own works, archives and GLOBAL zoom. Shared works and coordinates remain. Blocks persist across sign-ins; Settings > Blocked people offers Unblock. Account deletion erases the block list.
 
-Chat: use Chat on today's atelier screen, including unfinished works, or an archived
-work. Only current members can read/send. GLOBAL has no chat. Messages appear
-immediately with a limited phrase filter and rate limits. The three-dot message
-menu offers report text/avatar and block author. Blocked messages disappear only
-for the viewer. Settings > Chat and image review lets review_one inspect reports
-and remove messages or dismiss reports. There is no random or anonymous matching.
+Chat is available on today's atelier screen, including unfinished works, and archived atelier works. Only current members can read/send. GLOBAL has no chat. Messages appear immediately with a limited phrase filter and rate limits. The three-dot menu offers report text/avatar and block author. Settings > Chat and image review lets review_one inspect reports and remove messages. There is no random or anonymous matching.
 
-Profile > Profile picture: select an image. Pending pictures are visible only to
-the uploader; approve them in Chat and image review to show them to other members.
+Profile > Profile picture selects an image. It appears provisionally and undergoes the same automatic image checks. Rejected pictures are removed with a private notice. Image reports and operator removal remain available.
 
-For native Apple authentication, exit App Review and use Sign up with Apple on the
-normal sign-in screen. No LINE/WhatsApp account or phone number is required. Normal
-Apple-account deletion uses native Apple reauthentication. LINE and WhatsApp are
-optional alternatives.
+For native Apple authentication, exit App Review and choose Sign up with Apple. No LINE/WhatsApp account or phone number is required. Deletion uses native Apple reauthentication. LINE and WhatsApp are optional alternatives.
 
-Late approval updates the original day's work and can repartition it for approved
-contributors; its day and selected custodian remain. The one-week example is
-labelled fictional and is separate from the full-function review environment.
+Build 6 adds optional APNs notifications, enabled from Settings with separate preferences. Normal accounts receive generic alerts; detailed review reasons require signing in. App Review push delivery is intentionally disabled to keep review accounts isolated. Device tokens are erased on account deletion; logout stops delivery. No Expo Push Service is used.
 
-WKWebView is used with native Apple sign-in, LINE authentication sessions, camera,
-clipboard and sharing. Internet is required. Native push is not implemented.
+The labelled one-week example is fictional and separate from the functional review environment. WKWebView is integrated with native Apple/LINE authentication, camera, clipboard, sharing and notifications. Internet is required.
 
-## 残作業
+## 以前の準備記録（最新状況はSUBMISSION-HANDOFF.md）
 
 - Kapsoの実設定は確認済みでモデル改善はオフ。会話保存は期限なし。認証メッセージ等の第三者収集をApp Privacyへ追加し、Meta側の警告と実機のWhatsAppログインを確認する。
 - 利用者ブロックの実機確認。本人の画面だけで非表示・再ログイン後の維持・設定からの解除を実装し、通常／隔離審査環境をローカル検証済み。作品からの通報とシール単位の運営除去も実装済み。

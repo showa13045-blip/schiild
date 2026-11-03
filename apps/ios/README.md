@@ -125,7 +125,7 @@ Web・iOS両方のJavaScriptとHTMLのキャッシュ更新を確認します。
 
 Xserverの自動審査・仮公開・締切までの撮り直し・iOS通知は
 [AUTOMATIC-IMAGE-REVIEW.md](./AUTOMATIC-IMAGE-REVIEW.md) を参照する。
-自動審査とアプリ内通知は公開済み。ネイティブ通知は次のTestFlightビルドでの実機確認が必要。
+自動審査とアプリ内通知は公開済み。ネイティブ通知はbuild 6に含まれ、2026-11-03に本人から実機確認で問題なしとの回答を得た。
 
 `prepare-safety.mjs` は、既知の公開済みruntime、公開／iOSのscript map、審査用files map、
 出力フォルダーを引数に取り、ガード付きの差分を用意する。古いcheckoutを公開しない。

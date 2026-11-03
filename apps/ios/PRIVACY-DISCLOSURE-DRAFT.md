@@ -1,5 +1,7 @@
 # プライバシー申告の準備
 
+2026-11-03更新：App Privacyは通知用デバイスIDを含む10種類で公開済み。用途はアプリの機能、アカウントに関連付け、広告トラッキングなし。以降は過去の照合履歴。最新の提出状況はSUBMISSION-HANDOFF.mdを参照。
+
 2026-10-27。公開前の確認用。App Store Connectの申告は未完了。
 現行配信コードとAppleの[App Privacy Details](https://developer.apple.com/app-store/app-privacy-details/)を照合する。
 

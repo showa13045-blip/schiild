@@ -25,7 +25,8 @@ export const automaticCopy={
     "sexual": "性的な表現",
     "push": "画像審査結果のプッシュ通知",
     "gore": "流血・損傷のある表現",
-    "uncertain": "画像を十分に確認できませんでした。別の写真でお試しください。"
+    "uncertain": "画像を十分に確認できませんでした。別の写真でお試しください。",
+    "pushPrivacy": "iOSで通知を許可すると、通知用のデバイストークンをアカウントに関連付けてCloudflareへ保存し、AppleのAPNsで通知を配信します。通知に写真や審査理由の詳細は含めません。広告や追跡には使いません。設定で停止でき、ログアウト後は配信を止め、アカウント削除時はトークンも消去します。"
   },
   "en": {
     "title": "Image review updates",
@@ -52,7 +53,8 @@ export const automaticCopy={
     "sexual": "Sexual content",
     "push": "Push notifications for image review",
     "gore": "Gore or graphic injury",
-    "uncertain": "We could not assess this image confidently. Please try a different photo."
+    "uncertain": "We could not assess this image confidently. Please try a different photo.",
+    "pushPrivacy": "If you enable iOS notifications, we store the device’s notification token on Cloudflare linked to your account and send alerts through Apple APNs. Alerts do not contain photos or detailed review reasons. Tokens are not used for ads or tracking. Turn notifications off in Settings. Delivery stops after logout, and account deletion erases the tokens."
   },
   "fr": {
     "title": "Résultats de la vérification des images",
@@ -79,7 +81,8 @@ export const automaticCopy={
     "sexual": "Contenu sexuel",
     "push": "Notifications push des résultats de vérification",
     "gore": "Sang ou blessures graphiques",
-    "uncertain": "Cette image n’a pas pu être évaluée avec suffisamment de confiance. Essayez une autre photo."
+    "uncertain": "Cette image n’a pas pu être évaluée avec suffisamment de confiance. Essayez une autre photo.",
+    "pushPrivacy": "Si vous activez les notifications iOS, leur jeton est conservé sur Cloudflare et lié à votre compte. Les alertes passent par Apple APNs et ne contiennent ni photos ni motifs détaillés de vérification. Le jeton ne sert ni à la publicité ni au suivi. Vous pouvez désactiver les notifications dans les réglages. La déconnexion arrête les envois ; la suppression du compte efface le jeton."
   },
   "nl": {
     "title": "Resultaten van beeldcontrole",
@@ -106,7 +109,8 @@ export const automaticCopy={
     "sexual": "Seksuele inhoud",
     "push": "Pushmeldingen over beeldcontrole",
     "gore": "Bloed of expliciete verwondingen",
-    "uncertain": "Deze afbeelding kon niet met voldoende zekerheid worden beoordeeld. Probeer een andere foto."
+    "uncertain": "Deze afbeelding kon niet met voldoende zekerheid worden beoordeeld. Probeer een andere foto.",
+    "pushPrivacy": "Als je iOS-meldingen inschakelt, bewaren we het meldingstoken op Cloudflare, gekoppeld aan je account. Meldingen lopen via Apple APNs en bevatten geen foto’s of uitgebreide beoordelingsredenen. Het token wordt niet voor advertenties of tracking gebruikt. Je kunt meldingen uitschakelen in Instellingen. Na uitloggen stopt de bezorging; bij accountverwijdering wissen we de tokens."
   },
   "es": {
     "title": "Resultados de la revisión de imágenes",
@@ -133,7 +137,8 @@ export const automaticCopy={
     "sexual": "Contenido sexual",
     "push": "Notificaciones push de revisión de imágenes",
     "gore": "Sangre o lesiones explícitas",
-    "uncertain": "No pudimos evaluar esta imagen con suficiente confianza. Prueba con otra foto."
+    "uncertain": "No pudimos evaluar esta imagen con suficiente confianza. Prueba con otra foto.",
+    "pushPrivacy": "Si activas las notificaciones de iOS, guardamos el token del dispositivo en Cloudflare vinculado a tu cuenta y enviamos avisos mediante Apple APNs. No contienen fotos ni motivos detallados de revisión. No usamos el token para publicidad ni seguimiento. Puedes desactivar los avisos en Ajustes. Al cerrar sesión se detienen los envíos; al eliminar la cuenta se borran los tokens."
   },
   "it": {
     "title": "Esiti della verifica delle immagini",
@@ -160,7 +165,8 @@ export const automaticCopy={
     "sexual": "Contenuti sessuali",
     "push": "Notifiche push sugli esiti della verifica",
     "gore": "Sangue o ferite esplicite",
-    "uncertain": "Non è stato possibile valutare questa immagine con sufficiente sicurezza. Prova con un’altra foto."
+    "uncertain": "Non è stato possibile valutare questa immagine con sufficiente sicurezza. Prova con un’altra foto.",
+    "pushPrivacy": "Se attivi le notifiche iOS, salviamo il token del dispositivo su Cloudflare e lo colleghiamo al tuo account. Gli avvisi passano tramite Apple APNs e non contengono foto né motivazioni dettagliate della verifica. Il token non serve per pubblicità o tracciamento. Puoi disattivare le notifiche nelle impostazioni. Uscendo dall’account gli invii si fermano; eliminando l’account cancelliamo i token."
   },
   "ko": {
     "title": "이미지 심사 알림",
@@ -187,7 +193,8 @@ export const automaticCopy={
     "sexual": "성적인 표현",
     "push": "이미지 심사 결과 푸시 알림",
     "gore": "유혈 또는 심한 부상",
-    "uncertain": "이미지를 충분한 확신으로 판단하지 못했습니다. 다른 사진으로 시도해 주세요."
+    "uncertain": "이미지를 충분한 확신으로 판단하지 못했습니다. 다른 사진으로 시도해 주세요.",
+    "pushPrivacy": "iOS 알림을 허용하면 기기의 알림 토큰을 계정과 연결하여 Cloudflare에 저장하고 Apple APNs로 알림을 보냅니다. 알림에는 사진이나 자세한 심사 이유를 포함하지 않습니다. 광고나 추적에 사용하지 않습니다. 설정에서 끌 수 있으며 로그아웃하면 전송을 중단하고 계정을 삭제하면 토큰도 삭제합니다."
   },
   "id": {
     "title": "Hasil peninjauan gambar",
@@ -214,7 +221,8 @@ export const automaticCopy={
     "sexual": "Konten seksual",
     "push": "Notifikasi push hasil peninjauan gambar",
     "gore": "Darah atau luka eksplisit",
-    "uncertain": "Gambar ini belum dapat dinilai dengan cukup yakin. Silakan coba foto lain."
+    "uncertain": "Gambar ini belum dapat dinilai dengan cukup yakin. Silakan coba foto lain.",
+    "pushPrivacy": "Jika notifikasi iOS diaktifkan, token perangkat disimpan di Cloudflare dan ditautkan ke akun Anda. Pemberitahuan dikirim lewat Apple APNs tanpa foto atau rincian alasan peninjauan. Token tidak dipakai untuk iklan atau pelacakan. Notifikasi dapat dimatikan di Pengaturan. Pengiriman berhenti setelah keluar, dan token dihapus saat akun dihapus."
   },
   "km": {
     "title": "លទ្ធផលពិនិត្យរូបភាព",
@@ -241,7 +249,8 @@ export const automaticCopy={
     "sexual": "ខ្លឹមសារផ្លូវភេទ",
     "push": "ការជូនដំណឹងអំពីលទ្ធផលពិនិត្យរូបភាព",
     "gore": "ឈាម ឬរបួសធ្ងន់ធ្ងរ",
-    "uncertain": "មិនអាចវាយតម្លៃរូបភាពនេះដោយទំនុកចិត្តគ្រប់គ្រាន់បានទេ។ សូមសាកល្បងរូបផ្សេង។"
+    "uncertain": "មិនអាចវាយតម្លៃរូបភាពនេះដោយទំនុកចិត្តគ្រប់គ្រាន់បានទេ។ សូមសាកល្បងរូបផ្សេង។",
+    "pushPrivacy": "បើអ្នកអនុញ្ញាតការជូនដំណឹង iOS យើងរក្សាទុកនិមិត្តសញ្ញាឧបករណ៍នៅ Cloudflare ដោយភ្ជាប់នឹងគណនី ហើយផ្ញើការជូនដំណឹងតាម Apple APNs។ ការជូនដំណឹងមិនមានរូបថត ឬមូលហេតុពិនិត្យលម្អិតទេ។ យើងមិនប្រើវាសម្រាប់ផ្សាយពាណិជ្ជកម្ម ឬតាមដានទេ។ អ្នកអាចបិទនៅការកំណត់។ ការផ្ញើឈប់ក្រោយចាកចេញ ហើយនិមិត្តសញ្ញាត្រូវបានលុបពេលលុបគណនី។"
   },
   "hi": {
     "title": "चित्रों की समीक्षा के नतीजे",
@@ -268,6 +277,7 @@ export const automaticCopy={
     "sexual": "यौन सामग्री",
     "push": "चित्रों की समीक्षा के नतीजों की पुश सूचनाएँ",
     "gore": "खून या गंभीर चोट",
-    "uncertain": "इस चित्र का पर्याप्त भरोसे के साथ आकलन नहीं हो पाया। कृपया दूसरी फ़ोटो आज़माएँ।"
+    "uncertain": "इस चित्र का पर्याप्त भरोसे के साथ आकलन नहीं हो पाया। कृपया दूसरी फ़ोटो आज़माएँ।",
+    "pushPrivacy": "iOS सूचनाएँ चालू करने पर डिवाइस का सूचना टोकन आपके खाते से जोड़कर Cloudflare पर रखा जाता है। सूचनाएँ Apple APNs से भेजी जाती हैं; उनमें फ़ोटो या समीक्षा के विस्तृत कारण नहीं होते। टोकन का उपयोग विज्ञापन या ट्रैकिंग के लिए नहीं होता। सेटिंग में सूचनाएँ बंद कर सकते हैं। लॉगआउट पर भेजना बंद होता है और खाता मिटाने पर टोकन भी मिटाए जाते हैं।"
   }
 };
