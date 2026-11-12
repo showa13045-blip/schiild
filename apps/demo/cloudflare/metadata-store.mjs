@@ -1,8 +1,10 @@
 // SQLite-backed Durable Object KV adapter. CAS runs atomically, without I/O.
 import {removalChanges,metadataWriteAllowed} from '../server/account-removal.mjs';
 import {roomNotificationEvents} from '../server/notification-events.mjs';
+import {isMemberChatVisible} from '../../ios/server/member-chat.mjs';
 export function metadataStore(storage,images,{notificationEvents=false,now=()=>Date.now(),beforeAccountRemoval}={}){
  return {
+  async chatAnnouncementVisible(event,viewer){return isMemberChatVisible(storage,event,viewer);},
   async listJSON(prefix){return storage.sql.exec('SELECT key,data,etag FROM rooms WHERE key LIKE ?',prefix+'%').toArray().map(row=>({...row,data:JSON.parse(row.data)}));},
   async registerAccount(account){return storage.transactionSync(()=>{
    if(storage.sql.exec('SELECT key FROM rooms WHERE key = ?',`accounts/${account.username}`).toArray().length)return {modified:false,reason:'name'};

@@ -9,9 +9,10 @@ import {pushText} from '../src/push-copy.ts';
 import {localeTags} from '../src/locale-info.ts';
 import {localizedDate} from '../src/locale-dates.ts';
 import {automaticCopy} from '../../ios/server/automatic-copy.mjs';
+import {chatAnnouncementPayload} from '../../ios/server/member-chat-copy.mjs';
 import {readAPNSConfig,validAPNSToken,sendAPNS} from '../../ios/server/native-notifications.mjs';
-const kinds=['atelierReady','globalReady','post','moderation'],locales=Object.keys(localeTags);
-const defaults={atelierReady:true,globalReady:true,post:true,moderation:true};
+const kinds=['atelierReady','globalReady','post','moderation','chatAnnouncement'],locales=Object.keys(localeTags);
+const defaults={atelierReady:true,globalReady:true,post:true,moderation:true,chatAnnouncement:true};
 const linked=account=>Boolean(account?.lineSubject||account?.whatsappSubject||account?.appleSubject);
 const fail=(status,code)=>{throw new ApiError(status,code);};
 const read=(store,key)=>store.getWithMetadata(key,{type:'json'});
@@ -50,7 +51,7 @@ export function notificationService(store,{config,apnsConfig,images,now=()=>Date
   if(requireLine&&!linked(actor.account))fail(403,'line_required');
   if(body.action==='push.config')return {enabled:Boolean(config),nativeEnabled:Boolean(apnsConfig),publicKey:config?.publicKey??null,preferences:(await preference(actor.member)).preferences};
   if(body.action==='push.preferences'){
-   if(!body.preferences||kinds.some(kind=>kind!=='moderation'&&typeof body.preferences[kind]!=='boolean')||body.preferences.moderation!==undefined&&typeof body.preferences.moderation!=='boolean')fail(400,'push_invalid');
+   if(!body.preferences||kinds.some(kind=>!['moderation','chatAnnouncement'].includes(kind)&&typeof body.preferences[kind]!=='boolean')||['moderation','chatAnnouncement'].some(kind=>body.preferences[kind]!==undefined&&typeof body.preferences[kind]!=='boolean'))fail(400,'push_invalid');
    for(let n=0;n<10;n++){
     const key=`push-preferences/${actor.member}`,row=await read(store,key),old=await preference(actor.member);
     const preferences=Object.fromEntries(kinds.map(kind=>[kind,body.preferences[kind]??old.preferences[kind]])),enabledSince=Object.fromEntries(kinds.map(kind=>[kind,preferences[kind]&&!old.preferences[kind]?now():old.enabledSince[kind]]));
@@ -89,12 +90,14 @@ export function notificationService(store,{config,apnsConfig,images,now=()=>Date
   fail(400,'invalid');
  }
  async function eligible(event,sub){
+  if(event.kind==='chatAnnouncement'&&!await store.chatAnnouncementVisible?.(event,sub.member))return false;
   if(sub.disabled||sub.registeredAt>event.createdAt||!event.recipients.includes(sub.member)||!await live(sub))return false;
   const pref=await preference(sub.member);if(!pref.preferences[event.kind]||pref.enabledSince[event.kind]>event.createdAt)return false;
   if(event.code){const room=(await read(store,`rooms/${event.code}`))?.data;return Boolean(room?.members.includes(sub.member));}
   return true;
  }
  async function payload(event,sub){
+  if(event.kind==='chatAnnouncement')return chatAnnouncementPayload(event,sub.language);
   // Details stay in the authenticated inbox, never on a lock screen.
   if(event.kind==='moderation'){const text=automaticCopy[sub.language]??automaticCopy.en;return {title:'Schiild',body:text.title,tag:`schiild-${event.eventId}`,url:'/moderation-notices/?lang='+encodeURIComponent(sub.language),icon:'/app-icons/icon-192.png'};}
   const atelier=event.code?(await read(store,`rooms/${event.code}`))?.data.name??'Schiild':'',language=sub.language;

@@ -3,8 +3,10 @@ import {createHash,randomBytes} from 'node:crypto';
 import {moderationConfig} from './human-moderation.mjs';
 import {REPORT_REASONS} from './content-safety.mjs';
 import {officialAteliers} from './official-ateliers.mjs';
+import {memberChat,memberChatSchema,eraseMemberChat} from './member-chat.mjs';
 const hash=value=>createHash('sha256').update(value).digest('hex');
 export function communitySchema(storage){
+ memberChatSchema(storage);
  storage.sql.exec('CREATE TABLE IF NOT EXISTS atelier_chat (sequence INTEGER PRIMARY KEY AUTOINCREMENT, message_key TEXT NOT NULL UNIQUE, code TEXT NOT NULL, day TEXT NOT NULL, member TEXT NOT NULL, nonce TEXT NOT NULL, text TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, UNIQUE(member,nonce))');
  storage.sql.exec('CREATE INDEX IF NOT EXISTS atelier_chat_room ON atelier_chat(code,day,sequence)');
  storage.sql.exec('CREATE INDEX IF NOT EXISTS atelier_chat_member ON atelier_chat(member,created_at)');
@@ -16,6 +18,7 @@ export function communitySchema(storage){
 export function eraseCommunity(storage,member){
  communitySchema(storage);
  storage.sql.exec('DELETE FROM atelier_chat WHERE member=?',member);
+ eraseMemberChat(storage,member);
  storage.sql.exec('DELETE FROM profile_icons WHERE member=?',member);
  storage.sql.exec('DELETE FROM community_reports WHERE reporter=?',member);
  storage.sql.exec('UPDATE community_reports SET reviewer=NULL WHERE reviewer=?',member);
@@ -29,7 +32,7 @@ export function acceptsChatText(text,extra=[]){
  const phrases=['kill yourself','child porn','児童ポルノ','自殺しろ','죽어버려','아동 포르노','pornographie infantile','pornografia infantil','pornografia minorile','kinderporno','pornografi anak','बाल अश्लील','រូបអាសអាភាសកុមារ',...extra.filter(term=>typeof term==='string'&&term.length>1).slice(0,100)];
  return !phrases.some(term=>folded.includes(term.normalize('NFKC').toLocaleLowerCase()));
 }
-export function community({storage,core,ErrorClass,config:value,review=false,normalizeIcon,now=()=>Date.now()}){
+export function community({storage,core,ErrorClass,config:value,review=false,normalizeIcon,now=()=>Date.now(),notifications=false}){
  const fail=(status,code)=>{throw new ErrorClass(status,code);},rows=(query,...args)=>storage.sql.exec(query,...args).toArray();
  communitySchema(storage);
  const config=moderationConfig(value,review),operator=actor=>Boolean(config?.enabled&&config.operators.includes(actor.account?.username));
@@ -44,6 +47,10 @@ export function community({storage,core,ErrorClass,config:value,review=false,nor
  return {async execute(body,actor,credential){
   if(typeof body.action!=='string'||!body.action.startsWith('social.'))return core(body,credential);
   const action=body.action;
+  if(['social.chat.list','social.chat.sync','social.chat.prepare','social.chat.send','social.chat.edit','social.chat.delete','social.announcements.list','social.announcements.read'].includes(action)){
+   if(action==='social.chat.send')ready();
+   return memberChat({storage,ErrorClass,isOperator:operator,acceptsText:text=>acceptsChatText(text,config?.chatBlockedTerms??[]),now,notifications:notifications&&!review}).execute(body,actor);
+  }
   if(action==='social.official.public')return officialAteliers({storage,ErrorClass,isOperator:operator}).execute(body,actor);
   live(actor);
   if(action.startsWith('social.official.'))return officialAteliers({storage,ErrorClass,isOperator:operator}).execute(body,actor);
@@ -93,7 +100,7 @@ export function community({storage,core,ErrorClass,config:value,review=false,nor
     const account=rows("SELECT key FROM rooms WHERE key LIKE 'accounts/%' AND json_extract(data,'$.member')=?",image.member);if(!account.length)fail(409,'retry');
     if(body.decision==='approve'){storage.sql.exec("DELETE FROM profile_icons WHERE member=? AND status='approved'",image.member);storage.sql.exec("UPDATE profile_icons SET status='approved',reviewed_at=?,reviewer=? WHERE icon_key=?",at,actor.member,body.key);}else storage.sql.exec("UPDATE profile_icons SET image=?,status='rejected',reviewed_at=?,reviewer=? WHERE icon_key=?",Buffer.alloc(0),at,actor.member,body.key);
    }else{
-    if(body.kind!=='report'||!['remove','dismiss'].includes(body.decision))fail(400,'invalid');const report=rows("SELECT * FROM community_reports WHERE report_key=? AND status='open'",body.key)[0];if(!report)fail(409,'retry');if(body.decision==='remove'){if(report.kind==='chat')storage.sql.exec("UPDATE atelier_chat SET text='',status='removed' WHERE message_key=?",report.target_key);else storage.sql.exec('DELETE FROM profile_icons WHERE icon_key=?',report.target_key);}
+    if(body.kind!=='report'||!['remove','dismiss'].includes(body.decision))fail(400,'invalid');const report=rows("SELECT * FROM community_reports WHERE report_key=? AND status='open'",body.key)[0];if(!report)fail(409,'retry');if(body.decision==='remove'){if(report.kind==='chat'){storage.sql.exec("UPDATE atelier_chat SET text='',status='removed',version=version+1 WHERE message_key=?",report.target_key);storage.sql.exec('INSERT INTO chat_changes(code,day,message_key) SELECT code,day,message_key FROM atelier_chat WHERE message_key=?',report.target_key);storage.sql.exec('DELETE FROM chat_notices WHERE message_key=?',report.target_key);}else storage.sql.exec('DELETE FROM profile_icons WHERE icon_key=?',report.target_key);}
     storage.sql.exec('UPDATE community_reports SET status=?,reviewer=?,reviewed_at=? WHERE report_key=?',body.decision,actor.member,at,body.key);
    }return {done:true};
   });
