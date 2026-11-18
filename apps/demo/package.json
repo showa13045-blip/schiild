@@ -22,6 +22,7 @@
     "expo-font": "~57.0.3",
     "jose": "^6.2.12",
     "jpeg-js": "0.4.4",
+    "qrcode": "1.5.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
