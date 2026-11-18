@@ -1,0 +1,19 @@
+Schiild is a daily photo journal with shared artworks and member-only atelier chat. No purchases, advertisements, trading, random chat, likes or follower counts.
+
+Version 1.0.1 adds HTTPS Universal Links. Each organization has its own official atelier URL: https://schiild.app/atelier/HRQZ7WEF/ is one existing example, not a shared destination for other organizations. A compatible installed app opens this URL; otherwise it opens the website. Current members enter that atelier in the normal app. Other visitors use the existing sign-in and explicit join flow. All normal tabs remain available. The URL does not grant membership or post a photo. Authentication callbacks are excluded from Universal Links. No additional data collection is introduced.
+
+For functional review, tap the Schiild logo, then App Review on the sign-in screen. Use the credentials supplied in the review fields. This visibly labelled environment isolates accounts, memberships, photos, works, queues and sessions from ordinary users. The supplied reviewer is an operator only there. Universal Links target ordinary official ateliers, not the isolated review account.
+
+1. Create an atelier with a name, optional concept and visibility.
+2. Record today's schiil, allow the camera and take a photo. Accept the posting rules and image-check disclosure, then confirm. Additional ateliers and GLOBAL SCHIILD are explicit choices.
+3. Images appear provisionally while a local Xserver ONNX model checks sexual content and gore. Rejected images are removed with a private reason notice. Only rejected photos can be retaken before their original UTC 00:00 deadline. Uncertain results request another photo. The model does not verify copyright or consent. Settings > Automatic image review shows queue status to the reviewer.
+4. Preview/generate an atelier work, open its reveal and browse the archive calendar. GLOBAL supports pinch/drag and zoom to your contribution. New atelier works divide among contributors.
+5. Profile > Settings > Delete account: copy/select the ID, enter it and the supplied review password. Original photos, memberships, consents, notices, chat messages and profile pictures are erased. Shared works remain anonymous. Review sign-in again starts an empty test account.
+
+Reports identify a contribution and reason. Operators can remove that contribution without removing other contributors. Reports alone do not remove content. Blocks hide the person's content only from your own view, persist after sign-in and can be undone in Settings. No private report text is included in push payloads.
+
+Chat is available on today's atelier screen, including unfinished works, and archived atelier works. Only current members can read/send; GLOBAL has no chat. Messages appear immediately with phrase filtering, rate limits, reporting and blocking. The three-dot menu offers permitted message operations. Moderators can remove reported messages. Profile pictures undergo automatic image review and can be reported or removed.
+
+Outside App Review, choose Sign up with Apple to test native authentication. LINE and WhatsApp are optional alternatives; a phone number is not required for Apple registration. Account deletion supports linked-provider reauthentication.
+
+Optional APNs alerts have separate Settings preferences. Review push delivery is disabled to maintain isolation. Logout stops delivery; deletion erases device tokens. The labelled one-week example is fictional and separate from functional review. WKWebView integrates native authentication, camera, clipboard, sharing and notifications. Internet is required.

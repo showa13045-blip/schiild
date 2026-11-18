@@ -1,12 +1,13 @@
 import type {ExpoConfig} from 'expo/config';
 const config:ExpoConfig={
- name:'Schiild',slug:'schiild-ios',version:'1.0.0',scheme:'schiild',
+ name:'Schiild',slug:'schiild-ios',version:'1.0.1',scheme:'schiild',
  // Expo's account-binding schema requires this property; it is not product terminology.
  // eslint-disable-next-line schiild/domain-names
  owner:'show.a.13045',
  platforms:['ios'],orientation:'default',userInterfaceStyle:'light',
  icon:'./assets/icon.png',
  ios:{bundleIdentifier:'app.schiild.mobile',appleTeamId:'PQ7WUU6HWC',supportsTablet:true,usesAppleSignIn:true,
+  associatedDomains:['applinks:schiild.app'],
   infoPlist:{NSCameraUsageDescription:'今日のシールを撮影するためにカメラを使用します。',
    ITSAppUsesNonExemptEncryption:false,CFBundleAllowMixedLocalizations:true,
    LSApplicationQueriesSchemes:['line','whatsapp'],

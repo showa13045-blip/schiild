@@ -1,6 +1,13 @@
 // The native bridge is available only to the first-party HTTPS application.
 export const APP_ORIGIN='https://schiild.app';
 export const APP_CALLBACK='schiild://auth/line';
+// Universal Links select an entry point only. Membership is still checked by the server.
+export function atelierURL(value:unknown){
+ if(typeof value!=='string'||value.length>2048)return null;
+ try{const url=new URL(value);if(!isAppURL(value)||url.search||url.hash)return null;
+  return /^\/atelier\/[A-Z0-9]{8}\/$/.test(url.pathname)||/^\/collect\/[a-f0-9]{32}\/(view\/)?$/.test(url.pathname)?url.href:null;
+ }catch{return null;}
+}
 export function isAppURL(value:string){
  try{const url=new URL(value);return url.origin===APP_ORIGIN&&!url.username&&!url.password;}catch{return false;}
 }

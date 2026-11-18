@@ -9,28 +9,30 @@ import * as Clipboard from 'expo-clipboard';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Notifications from 'expo-notifications';
 import officialCopy from '../demo/src/copy.json';
-import {APP_ORIGIN,APP_CALLBACK,isAppURL,lineAuthorization,lineReturn,externalURL,nativeMessage,notificationURL} from './src/policy';
+import {APP_ORIGIN,APP_CALLBACK,isAppURL,lineAuthorization,lineReturn,externalURL,nativeMessage,notificationURL,atelierURL} from './src/policy';
 import {nativeBridge,bridgeResult} from './src/bridge';
 import type {AppleMessage} from './src/policy';
 Notifications.setNotificationHandler({handleNotification:async()=>({shouldShowBanner:true,shouldShowList:true,shouldPlaySound:false,shouldSetBadge:false})});
 export default function App(){
- const web=useRef<WebView>(null),authBusy=useRef(false),currentURL=useRef(APP_ORIGIN+'/');
+ const web=useRef<WebView>(null),authBusy=useRef(false),atelierOpened=useRef(false),currentURL=useRef(APP_ORIGIN+'/');
  const [uri,setUri]=useState(APP_ORIGIN+'/'),[revision,setRevision]=useState(0),[failed,setFailed]=useState(false);
  const [apple,setApple]=useState<AppleMessage|null>(null),[appleReady,setAppleReady]=useState(false),[appleBusy,setAppleBusy]=useState(false);
+ function openAtelier(value:unknown){const url=atelierURL(value);if(!url||authBusy.current)return;atelierOpened.current=true;setFailed(false);setUri(url);setRevision(n=>n+1);}
+ useEffect(()=>{let active=true,warm=false;const listener=Linking.addEventListener('url',event=>{warm=true;openAtelier(event.url);});void Linking.getInitialURL().then(url=>{if(active&&!warm)openAtelier(url);}).catch(()=>{});return()=>{active=false;listener.remove();};},[]);
  useEffect(()=>{void AppleAuthentication.isAvailableAsync().then(setAppleReady).catch(()=>{});},[]);
  useEffect(()=>{
   const open=(response:Notifications.NotificationResponse|null)=>{const url=notificationURL(response?.notification.request.content.data?.url);if(url){setUri(url);setRevision(n=>n+1);void Notifications.clearLastNotificationResponseAsync();}};
-  void Notifications.getLastNotificationResponseAsync().then(open).catch(()=>{});
+  void Promise.all([Linking.getInitialURL(),Notifications.getLastNotificationResponseAsync()]).then(([url,response])=>{if(!atelierOpened.current&&!atelierURL(url))open(response);}).catch(()=>{});
   const listener=Notifications.addNotificationResponseReceivedListener(open);return()=>listener.remove();
  },[]);
- function appleCancel(){if(apple)web.current?.injectJavaScript(bridgeResult(apple.requestId,false));authBusy.current=false;setApple(null);}
+ function appleCancel(){if(apple)web.current?.injectJavaScript(bridgeResult(apple.requestId,false));setApple(null);authBusy.current=false;}
  async function appleAuthorize(){
   if(!apple||appleBusy||!appleReady)return;setAppleBusy(true);
   try{
    const result=await AppleAuthentication.signInAsync({nonce:apple.nonce,state:apple.state,requestedScopes:apple.intent==='register'?[AppleAuthentication.AppleAuthenticationScope.FULL_NAME]:[]});
    if(result.state!==apple.state||!result.identityToken||!result.authorizationCode)throw Error('apple_invalid');
    web.current?.injectJavaScript(bridgeResult(apple.requestId,true,{state:result.state,identityToken:result.identityToken,code:result.authorizationCode,name:result.fullName?AppleAuthentication.formatFullName(result.fullName):undefined}));
-  }catch{web.current?.injectJavaScript(bridgeResult(apple.requestId,false));}finally{authBusy.current=false;setApple(null);setAppleBusy(false);}
+  }catch{web.current?.injectJavaScript(bridgeResult(apple.requestId,false));}finally{setApple(null);setAppleBusy(false);authBusy.current=false;}
  }
  async function authorization(value:string){
   const request=lineAuthorization(value);if(!request||authBusy.current)return;
@@ -68,7 +70,7 @@ export default function App(){
   }finally{web.current?.injectJavaScript(bridgeResult(value.requestId,ok));}
  }
  return <SafeAreaProvider><StatusBar style="dark"/><SafeAreaView style={styles.screen} edges={['top','bottom','left','right']}>
-  {failed?<View style={styles.failure}><Text style={styles.brand}>Schiild</Text><Text style={styles.error}>{officialCopy['error.server.body']}</Text><Pressable style={styles.retry} accessibilityRole="button" onPress={()=>{setFailed(false);setUri(APP_ORIGIN+'/');setRevision(n=>n+1);}}><Text>{officialCopy['common.retry']}</Text></Pressable></View>:
+  {failed?<View style={styles.failure}><Text style={styles.brand}>Schiild</Text><Text style={styles.error}>{officialCopy['error.server.body']}</Text><Pressable style={styles.retry} accessibilityRole="button" onPress={()=>{setFailed(false);setUri(atelierURL(uri)??APP_ORIGIN+'/');setRevision(n=>n+1);}}><Text>{officialCopy['common.retry']}</Text></Pressable></View>:
   <WebView key={revision} ref={web} source={{uri}} style={styles.screen}
    applicationNameForUserAgent="SchiildNative/1.1" originWhitelist={['https://*']}
    onShouldStartLoadWithRequest={request=>request.isTopFrame===false?false:navigate(request.url)}
